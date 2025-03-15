@@ -13,9 +13,10 @@ describe('AppController', () => {
   });
 
   describe('getData', () => {
-    it('should return "Hello API"', () => {
+    it('should return "Hello API"', async () => {
       const appController = app.get<AppController>(AppController);
-      expect(appController.getData()).toEqual({ message: 'Hello API' });
+      const data = await appController.getData();
+      expect(data.message).toEqual('Hello API');
     });
   });
 });
