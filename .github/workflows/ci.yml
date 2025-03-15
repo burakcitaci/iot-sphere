@@ -34,4 +34,4 @@ jobs:
           echo "BASE_BRANCH=$DEFAULT_BRANCH" >> $GITHUB_ENV
 
       # Nx Affected runs only tasks affected by the changes in this PR/commit
-      - run: yarn nx affected -t lint test build --base=$BASE_BRANCH --head=HEAD
+      - run: yarn nx affected -t lint test build
