@@ -96,4 +96,25 @@ export function useDelete<T>(url: string, config?: SWRConfiguration): Omit<SWRRe
   };
 }
 
+export function usePatch<T, R = any>(url: string, config?: SWRConfiguration): Omit<SWRResponse<T>, 'mutate'> & { mutate: (data: R) => Promise<T | undefined> } {
+  const { data, error, isLoading, mutate } = useSWR<T>(
+    url,
+    null,
+    { ...swrConfig, ...config }
+  );
+
+  const patchData = async (patchData: R) => {
+    const response = await fetchClient.patch<T>(url, patchData);
+    await mutate(response, false);
+    return response;
+  };
+
+  return {
+    data,
+    error,
+    isLoading,
+    mutate: patchData,
+  };
+}
+
 export type MutateFunction<T, R = any> = (data: R, options?: { revalidate?: boolean }) => Promise<T>; 

@@ -27,7 +27,15 @@ class FetchClient {
       }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    return response.json();
+    
+    // For DELETE requests with no content, return void
+    if (response.status === 204) {
+      return {} as T;
+    }
+    
+    // For responses with content, parse JSON
+    const text = await response.text();
+    return text ? JSON.parse(text) : {} as T;
   }
 
   public async get<T>(url: string, options?: RequestInit): Promise<T> {
@@ -52,6 +60,16 @@ class FetchClient {
     const response = await fetch(`${this.baseUrl}${url}`, {
       ...options,
       method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+      headers: await this.getHeaders(),
+    });
+    return this.handleResponse<T>(response);
+  }
+
+  public async patch<T>(url: string, data?: any, options?: RequestInit): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      ...options,
+      method: 'PATCH',
       body: data ? JSON.stringify(data) : undefined,
       headers: await this.getHeaders(),
     });

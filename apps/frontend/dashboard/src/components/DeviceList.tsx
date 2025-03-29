@@ -12,7 +12,10 @@ import { AlertCircle } from "lucide-react";
 export function DeviceList() {
   const { devices = [], error, isLoading, createDevice, updateDevice, deleteDevice, mutate } = useDevices();
   const [newDevice, setNewDevice] = useState<CreateDeviceDto>({ name: '', type: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [updatingOnlineId, setUpdatingOnlineId] = useState<string | null>(null);
+  const [updatingOfflineId, setUpdatingOfflineId] = useState<string | null>(null);
+  const [deletingDeviceId, setDeletingDeviceId] = useState<string | null>(null);
 
   // Effect to handle device updates
   useEffect(() => {
@@ -27,45 +30,45 @@ export function DeviceList() {
     if (!newDevice.name || !newDevice.type) return;
 
     try {
-      setIsSubmitting(true);
+      setIsCreating(true);
       const response = await createDevice(newDevice);
       if (response) {
         setNewDevice({ name: '', type: '' });
-        // Force a revalidation of the devices list
-        await mutate();
       }
     } catch (error) {
       console.error('Failed to create device:', error);
     } finally {
-      setIsSubmitting(false);
+      setIsCreating(false);
     }
   };
 
   const handleUpdateDevice = async (id: string, data: UpdateDeviceDto) => {
     try {
-      setIsSubmitting(true);
-      const response = await updateDevice(id, data);
-      if (response) {
-        // Force a revalidation of the devices list
-        await mutate();
+      if (data.status === 'online') {
+        setUpdatingOnlineId(id);
+      } else {
+        setUpdatingOfflineId(id);
       }
+      await updateDevice(id, data);
     } catch (error) {
       console.error('Failed to update device:', error);
     } finally {
-      setIsSubmitting(false);
+      if (data.status === 'online') {
+        setUpdatingOnlineId(null);
+      } else {
+        setUpdatingOfflineId(null);
+      }
     }
   };
 
   const handleDeleteDevice = async (id: string) => {
     try {
-      setIsSubmitting(true);
+      setDeletingDeviceId(id);
       await deleteDevice(id);
-      // Force a revalidation of the devices list
-      await mutate();
     } catch (error) {
       console.error('Failed to delete device:', error);
     } finally {
-      setIsSubmitting(false);
+      setDeletingDeviceId(null);
     }
   };
 
@@ -111,7 +114,7 @@ export function DeviceList() {
               value={newDevice.name}
               onChange={(e) => setNewDevice({ ...newDevice, name: e.target.value })}
               placeholder="Device name"
-              disabled={isSubmitting}
+              disabled={isCreating}
               required
             />
             <Input
@@ -119,17 +122,17 @@ export function DeviceList() {
               value={newDevice.type}
               onChange={(e) => setNewDevice({ ...newDevice, type: e.target.value })}
               placeholder="Device type"
-              disabled={isSubmitting}
+              disabled={isCreating}
               required
             />
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Adding...' : 'Add Device'}
+            <Button type="submit" disabled={isCreating}>
+              {isCreating ? 'Adding...' : 'Add Device'}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-3 grid grid-cols-1 gap-4 px-4">
         {devices.map((device) => (
           <Card key={device.id}>
             <CardHeader>
@@ -151,25 +154,25 @@ export function DeviceList() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleUpdateDevice(device.id, { status: 'online' })}
-                    disabled={isSubmitting}
+                    disabled={updatingOnlineId === device.id}
                   >
-                    Set Online
+                    {updatingOnlineId === device.id ? 'Updating...' : 'Set Online'}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleUpdateDevice(device.id, { status: 'offline' })}
-                    disabled={isSubmitting}
+                    disabled={updatingOfflineId === device.id}
                   >
-                    Set Offline
+                    {updatingOfflineId === device.id ? 'Updating...' : 'Set Offline'}
                   </Button>
                   <Button
                     variant="destructive"
                     size="sm"
                     onClick={() => handleDeleteDevice(device.id)}
-                    disabled={isSubmitting}
+                    disabled={deletingDeviceId === device.id}
                   >
-                    Delete
+                    {deletingDeviceId === device.id ? 'Deleting...' : 'Delete'}
                   </Button>
                 </div>
               </div>

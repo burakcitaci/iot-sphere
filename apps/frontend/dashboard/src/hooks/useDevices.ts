@@ -1,4 +1,4 @@
-import { useGet, usePost, usePut, useDelete } from '../api/swr';
+import { useGet, usePost, usePut, useDelete, usePatch } from '../api/swr';
 import { fetchClient } from '../api/fetchClient';
 import { useApiError } from './useApiError';
 import { ApiError } from '../types/api';
@@ -32,8 +32,6 @@ export function useDevices() {
   const DEVICES_KEY = '/devices';
   const { data: devices = [], error, isLoading, mutate } = useGet<Device[]>(DEVICES_KEY);
   const { mutate: createDeviceMutate } = usePost<Device>(DEVICES_KEY);
-  const { mutate: updateDeviceMutate } = usePut<Device>(DEVICES_KEY);
-  const { mutate: deleteDeviceMutate } = useDelete<Device>(DEVICES_KEY);
 
   const createDevice = async (data: CreateDeviceDto) => {
     try {
@@ -51,7 +49,10 @@ export function useDevices() {
 
   const updateDevice = async (id: string, data: UpdateDeviceDto) => {
     try {
-      const response = await updateDeviceMutate(data);
+      console.log('Updating device:', id, data); // Debug log
+      const response = await fetchClient.patch<Device>(`${DEVICES_KEY}/${id}`, data);
+      console.log('Update response:', response); // Debug log
+      
       if (!response) return;
       
       await mutate(
@@ -68,8 +69,9 @@ export function useDevices() {
 
   const deleteDevice = async (id: string) => {
     try {
-      await deleteDeviceMutate();
+      await fetchClient.delete<void>(`${DEVICES_KEY}/${id}`);
       
+      // Update the cache by removing the deleted device
       await mutate(
         (devices || []).filter((device) => device.id !== id),
         false
@@ -92,19 +94,19 @@ export function useDevices() {
 }
 
 export function useDevice(id: string) {
-  return useGet<Device>(`/api/devices/${id}`);
+  return useGet<Device>(`/devices/${id}`);
 }
 
 export function useCreateDevice() {
-  return usePost<Device, CreateDeviceDto>('/api/devices');
+  return usePost<Device, CreateDeviceDto>('/devices');
 }
 
 export function useUpdateDevice(id: string) {
-  return usePut<Device, UpdateDeviceDto>(`/api/devices/${id}`);
+  return usePut<Device, UpdateDeviceDto>(`/devices/${id}`);
 }
 
 export function useDeleteDevice(id: string) {
-  return useDelete<void>(`/api/devices/${id}`);
+  return useDelete<void>(`/devices/${id}`);
 }
 
 // Fetch-based hook with error handling
