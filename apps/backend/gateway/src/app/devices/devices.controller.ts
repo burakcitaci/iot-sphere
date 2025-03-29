@@ -10,7 +10,6 @@ export class DevicesController {
 
   @Post()
   create(@Body() createDeviceDto: CreateDeviceDto) {
-    console.log(createDeviceDto);
     return this.devicesService.create(createDeviceDto);
   }
 
@@ -26,6 +25,7 @@ export class DevicesController {
 
   @Patch(':id')
   update(@Param() params: DeviceIdDto, @Body() updateDeviceDto: UpdateDeviceDto) {
+    console.log(updateDeviceDto);
     return this.devicesService.update(params.id, updateDeviceDto);
   }
 
