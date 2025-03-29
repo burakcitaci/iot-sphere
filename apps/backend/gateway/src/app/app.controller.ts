@@ -20,6 +20,12 @@ export class AppController {
   }
 
   @Get('span/:spanId')
+  @Trace({
+    spanName: 'getSpanById',
+    tracerName: AppController.name,
+    spanKind: SpanKind.CONSUMER,
+    captureArgs: true,
+  })
   getSpanById(spanId: string) {
     return this.appService.getSpanById(spanId);
   }
