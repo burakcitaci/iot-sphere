@@ -31,15 +31,20 @@ export interface UpdateDeviceDto {
 export function useDevices() {
   const DEVICES_KEY = '/devices';
   const { data: devices = [], error, isLoading, mutate } = useGet<Device[]>(DEVICES_KEY);
-  const { mutate: createDeviceMutate } = usePost<Device>(DEVICES_KEY);
+  const { mutate: createDeviceMutate } = usePost<Device, CreateDeviceDto>(DEVICES_KEY);
 
   const createDevice = async (data: CreateDeviceDto) => {
     try {
+      console.log('Creating device:', data);
       const response = await createDeviceMutate(data);
       if (!response) return;
       
       // Update the cache with the new device
-      await mutate([...(devices || []), response], false);
+      await mutate((currentDevices) => {
+        const devices = Array.isArray(currentDevices) ? currentDevices : [];
+        return [...devices, response];
+      }, false);
+      
       return response;
     } catch (error) {
       console.error('Failed to create device:', error);
@@ -49,16 +54,13 @@ export function useDevices() {
 
   const updateDevice = async (id: string, data: UpdateDeviceDto) => {
     try {
-      console.log('Updating device:', id, data); // Debug log
       const response = await fetchClient.patch<Device>(`${DEVICES_KEY}/${id}`, data);
-      console.log('Update response:', response); // Debug log
-      
       if (!response) return;
       
-      await mutate(
-        (devices || []).map((device) => device.id === id ? response : device),
-        false
-      );
+      await mutate((currentDevices) => {
+        const devices = Array.isArray(currentDevices) ? currentDevices : [];
+        return devices.map((device) => device.id === id ? response : device);
+      }, false);
       
       return response;
     } catch (error) {
@@ -71,11 +73,10 @@ export function useDevices() {
     try {
       await fetchClient.delete<void>(`${DEVICES_KEY}/${id}`);
       
-      // Update the cache by removing the deleted device
-      await mutate(
-        (devices || []).filter((device) => device.id !== id),
-        false
-      );
+      await mutate((currentDevices) => {
+        const devices = Array.isArray(currentDevices) ? currentDevices : [];
+        return devices.filter((device) => device.id !== id);
+      }, false);
     } catch (error) {
       console.error('Failed to delete device:', error);
       throw error;

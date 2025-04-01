@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   BarChartIcon,
   BoxesIcon,
@@ -11,6 +12,7 @@ import {
   SearchIcon,
   SettingsIcon,
   UsersIcon,
+  BugIcon,
 } from 'lucide-react';
 
 import { NavMain } from '@/components/nav-main';
@@ -39,18 +41,28 @@ const data = {
       icon: LayoutDashboardIcon,
     },
     {
+      title: 'Devices',
+      url: '/devices',
+      icon: BoxesIcon,
+    },
+    {
       title: 'Analytics',
       url: '/analytics',
       icon: BarChartIcon,
     },
     {
+      title: 'Monitoring',
+      url: '/monitoring',
+      icon: BugIcon,
+    },
+    {
       title: 'Projects',
-      url: '#',
+      url: '/projects',
       icon: FolderIcon,
     },
     {
       title: 'Team',
-      url: '#',
+      url: '/team',
       icon: UsersIcon,
     },
   ],
@@ -105,23 +117,25 @@ const data = {
   navSecondary: [
     {
       title: 'Settings',
-      url: '#',
+      url: '/settings',
       icon: SettingsIcon,
     },
     {
       title: 'Get Help',
-      url: '#',
+      url: '/help',
       icon: HelpCircleIcon,
     },
     {
       title: 'Search',
-      url: '#',
+      url: '/search',
       icon: SearchIcon,
     },
   ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const location = useLocation();
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -131,17 +145,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="/">
+              <Link to="/">
                 <BoxesIcon className="h-5 w-5" />
                 <span className="text-base font-semibold">IOT Sphere</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={data.navMain} currentPath={location.pathname} />
+        <NavSecondary items={data.navSecondary} currentPath={location.pathname} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

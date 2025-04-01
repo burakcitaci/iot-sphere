@@ -16,7 +16,7 @@ import { SectionCards } from '@/components/section-cards';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
-import { DataTable } from '@/components/data-table';
+import { DataTable, columns } from '@/components/data-table';
 
 
 export function App() {
@@ -32,7 +32,7 @@ export function App() {
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
               </div>
-              <DataTable data={data} />
+              <DataTable data={data} columns={columns} />
             </div>
           </div>
         </div>

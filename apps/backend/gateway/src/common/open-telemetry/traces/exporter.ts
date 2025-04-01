@@ -1,11 +1,20 @@
 import { ExportResult, ExportResultCode } from '@opentelemetry/core';
 import { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-node';
 import { Logger } from '@nestjs/common';
+import { DaprClient } from '@dapr/dapr';
 
 export class GatewaySpanExporter implements SpanExporter {
   private readonly logger = new Logger(GatewaySpanExporter.name);
   private _isShutdown = false;
   private _pendingExports: Promise<void>[] = [];
+  private readonly daprClient: DaprClient;
+
+  constructor() {
+    this.daprClient = new DaprClient({
+      daprHost: process.env.DAPR_HOST || 'localhost',
+      daprPort: process.env.DAPR_PORT || '3501',
+    });
+  }
 
   export(
     spans: ReadableSpan[],
@@ -17,15 +26,39 @@ export class GatewaySpanExporter implements SpanExporter {
       return;
     }
 
-    console.log(`Exporting ${spans.length} spans to Cassandra...`);
-
-    const exportPromise = Promise.all(spans.map((span) => console.log(span)))
+    const exportPromise = Promise.all(
+      
+      spans.map(async (span) => {
+        console.log('Exporting span:', span);
+        try {
+          await this.daprClient.pubsub.publish('pubsub', 'telemetry', {
+            type: 'trace',
+            data: {
+              name: span.name,
+              // traceId: span.spanContext().traceId,
+              // name: span.name,
+              // timestamp: new Date(span.startTime[0] * 1000 + span.startTime[1] / 1000000),
+              // duration: span.duration[0] * 1000 + span.duration[1] / 1000000,
+              // status: span.status.code === 0 ? 'success' : 'error',
+              // spans: [span],
+              // metadata: {
+              //   attributes: span.attributes,
+              //   events: span.events,
+              //   links: span.links,
+              // },
+            },
+          });
+        } catch (error) {
+          this.logger.error('Failed to publish span to Dapr:', error);
+          throw error;
+        }
+      })
+    )
       .then(() => {
-        console.log('Successfully stored spans in Cassandra.');
         resultCallback({ code: ExportResultCode.SUCCESS });
       })
       .catch((error) => {
-        this.logger.error('Failed to store spans in Cassandra:', error);
+        this.logger.error('Failed to export spans:', error);
         resultCallback({ code: ExportResultCode.FAILED, error });
       })
       .finally(() => {

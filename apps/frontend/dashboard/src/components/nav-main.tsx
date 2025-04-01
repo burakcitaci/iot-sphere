@@ -1,4 +1,5 @@
 import { LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -7,17 +8,16 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-export function NavMain({
-  items,
-}: Readonly<{
+interface NavMainProps {
   items: {
     title: string;
     url: string;
     icon?: LucideIcon;
   }[];
-}>) {
-  // const location = useLocation();
+  currentPath: string;
+}
 
+export function NavMain({ items, currentPath }: NavMainProps) {
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -25,11 +25,14 @@ export function NavMain({
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
+                asChild
                 tooltip={item.title}
-                // isActive={location.pathname === item.url}
+                isActive={currentPath === item.url}
               >
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
+                <Link to={item.url}>
+                  {item.icon && <item.icon />}
+                  <span>{item.title}</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
