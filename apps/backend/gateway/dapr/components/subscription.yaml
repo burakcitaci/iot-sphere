@@ -1,0 +1,14 @@
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: telemetry-subscription
+spec:
+  topic: telemetry
+  route: /telemetry
+  pubsubname: pubsub
+  deadLetterTopic: telemetry-dlq
+  retryPolicy:
+    maxRetries: 3
+    maxRetryBackoff: 2s 
+  scopes:
+    - gateway-api

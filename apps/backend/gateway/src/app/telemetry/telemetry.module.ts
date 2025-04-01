@@ -1,14 +1,23 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { TelemetryController } from './telemetry.controller';
+import { TelemetryService } from './telemetry.service';
+import { Trace } from './entities/trace.entity';
+import { Log } from './entities/log.entity';
+import { DaprModule } from '../dapr/dapr.module';
+import { GatewayLogExporter } from '../../common/open-telemetry/logs/exporter';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { OtelLogger } from '../../common/open-telemetry/logs/logger';
-import { LoggerProvider } from '@opentelemetry/sdk-logs';
+import { BatchLogRecordProcessor, LoggerProvider } from '@opentelemetry/sdk-logs';
 import { Resource } from '@opentelemetry/resources';
-import { GatewayLogExporter } from '../../common/open-telemetry/logs/exporter';
-import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
-import { TelemetryService } from './telemetry.service';
-
+const GATEWAY_LOG_EXPORTER = 'GATEWAY_LOG_EXPORTER';
 @Module({
-  imports: [ConfigModule],
+  imports: [
+    TypeOrmModule.forFeature([Trace, Log]),
+    DaprModule,
+    ConfigModule
+  ],
+  controllers: [TelemetryController],
   providers: [
     TelemetryService,
     {
@@ -30,6 +39,6 @@ import { TelemetryService } from './telemetry.service';
       inject: [ConfigService],
     },
   ],
-  exports: [OtelLogger],
+  exports: [TelemetryService, OtelLogger],
 })
 export class TelemetryModule {} 
