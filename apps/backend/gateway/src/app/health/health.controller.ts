@@ -1,18 +1,20 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheck, HealthCheckService, HttpHealthIndicator } from '@nestjs/terminus';
+import { HealthCheck, HealthCheckService, HttpHealthIndicator, TypeOrmHealthIndicator } from '@nestjs/terminus';
 
-@Controller('health')
-export class HealthController {
-  constructor(
-    private health: HealthCheckService,
-    private http: HttpHealthIndicator,
-  ) {}
+// @Controller('health')
+// export class HealthController {
+//   constructor(
+//     private health: HealthCheckService,
+//     private http: HttpHealthIndicator,
+//      private db: TypeOrmHealthIndicator, // <-- add this
+//   ) {}
 
-  @Get()
-  @HealthCheck()
-  check() {
-    return this.health.check([
-      () => this.http.pingCheck('self', 'http://localhost:3001/api'),
-    ]);
-  }
-} 
+//   @Get()
+//   @HealthCheck()
+//   check() {
+//     return this.health.check([
+//       () => this.http.pingCheck('self', 'http://localhost:3001/api'),
+//       () => this.db.pingCheck('database'), // <-- new line to check PostgreSQL
+//     ]);
+//   }
+// } 

@@ -1,32 +1,19 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { AppService } from './app.service';
-import { Trace } from '../common/open-telemetry/traces/trace';
-import { SpanKind } from '@opentelemetry/api';
+import { Trace } from '@gateway/otel-library';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
-  @Get()
-  @Trace({
-    spanName: 'getData',
-    tracerName: AppController.name,
-    spanKind: SpanKind.CONSUMER,
-    captureArgs: false,
-  })
-  getData() {
-    Logger.log('Getting data...');
-    return this.appService.getData();
-  }
+  constructor( private readonly appService: AppService) {}
 
   @Get('span/:spanId')
   @Trace({
-    spanName: 'getSpanById',
-    tracerName: AppController.name,
-    spanKind: SpanKind.CONSUMER,
+    spanName : 'device-by-span-id',
     captureArgs: true,
   })
-  getSpanById(spanId: string) {
-    return this.appService.getSpanById(spanId);
+  getSpanById(@Param('spanId') spanId: string) {
+    const result = this.appService.getSpanById(spanId);
+   
+    return result;
   }
 }

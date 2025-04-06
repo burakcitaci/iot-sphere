@@ -19,7 +19,13 @@
     "baseUrl": ".",
     "rootDir": ".",
     "paths": {
-      "@iot-sphere/entity-lib": ["shared/entity-lib/src/index.ts"]
+      "@gateway/open-telemetry-library": [
+        "apps/backend/shared/open-telemetry-library/src/index.ts"
+      ],
+      "@gateway/otel-library": [
+        "apps/backend/shared/otel-library/src/index.ts"
+      ],
+      "entity-lib": ["shared/entity-lib/src/index.ts"]
     }
   }
 }

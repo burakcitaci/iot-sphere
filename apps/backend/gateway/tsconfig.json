@@ -4,6 +4,9 @@
   "include": [],
   "references": [
     {
+      "path": "../shared/otel-library"
+    },
+    {
       "path": "./tsconfig.app.json"
     },
     {

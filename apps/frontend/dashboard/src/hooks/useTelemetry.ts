@@ -1,67 +1,113 @@
-import { useState, useEffect } from 'react';
-import { telemetryService, Trace, Log } from '@/services/telemetry';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { telemetryService, type SpanData, type CustomLogRecord } from '@/services/telemetry';
+import { ReadableSpan } from '@opentelemetry/sdk-trace-node';
 
-export function useTelemetry() {
-  const [traces, setTraces] = useState<Trace[]>([]);
-  const [logs, setLogs] = useState<Log[]>([]);
+
+export function useTelemetry(autoRefreshEnabled = true) {
+  const [logs, setLogs] = useState<CustomLogRecord[]>([]);
+  const [spans, setSpans] = useState<ReadableSpan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const eventSourceRef = useRef<() => void | null>(null);
+  const logEventSourceRef = useRef<() => void | null>(null);
+  const maxSpans = 100;
+  const maxLogs = 100;
 
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        setIsLoading(true);
-        const [tracesData, logsData] = await Promise.all([
-          telemetryService.getTraces(),
-          telemetryService.getLogs(),
-        ]);
-        setTraces(tracesData);
-        setLogs(logsData);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to load telemetry data'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadInitialData();
-  }, []);
-
-  useEffect(() => {
-    console.log('useTelemetry useEffect');
-    const unsubscribeTraces = telemetryService.subscribeToTraces((trace) => {
-      setTraces((prevTraces) => [trace, ...prevTraces]);
-    });
-
-    // const unsubscribeLogs = telemetryService.subscribeToLogs((log) => {
-    //   setLogs((prevLogs) => [log, ...prevLogs]);
-    // });
-
-    return () => {
-      unsubscribeTraces();
-      //unsubscribeLogs();
-    };
-  }, []);
-
-  const refreshData = async (startTime?: Date, endTime?: Date) => {
+  const loadInitialData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [tracesData, logsData] = await Promise.all([
-        telemetryService.getTraces(startTime, endTime),
-        telemetryService.getLogs(startTime, endTime),
+      setError(null);
+      const [spansData, logsData] = await Promise.all([
+        telemetryService.getSpans(),
+        telemetryService.getLogs(),
       ]);
-      setTraces(tracesData);
+      setSpans(spansData);
       setLogs(logsData);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to refresh telemetry data'));
+      setError(err instanceof Error ? err : new Error('Failed to load telemetry data'));
+      console.error('Error loading telemetry data:', err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  const refreshData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const [spansData, logsData] = await Promise.all([
+        telemetryService.getSpans(),
+        telemetryService.getLogs(),
+      ]);
+      setSpans(spansData);
+      setLogs(logsData);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to refresh telemetry data'));
+      console.error('Error refreshing telemetry data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Setup SSE subscription
+  useEffect(() => {
+    if (!autoRefreshEnabled) {
+      if (eventSourceRef.current) {
+        eventSourceRef.current();
+        eventSourceRef.current = null;
+      }
+      if (logEventSourceRef.current) {
+        logEventSourceRef.current();
+        logEventSourceRef.current = null;
+      }
+      return;
+    }
+
+    const handleSpanData = (span: ReadableSpan) => {
+      console.log('New span data received:', span);
+      setSpans(prevSpans => {
+        const newSpans = [span, ...prevSpans];
+        return newSpans.slice(0, maxSpans);
+      });
+    };
+
+    const handleLogData = (log: CustomLogRecord) => {
+      console.log(log)
+      setLogs(prevLogs => {
+        const newLogs = [log, ...prevLogs];
+        return newLogs.slice(0, maxLogs);
+      });
+    };
+
+    const handleError = (error: Event) => {
+      console.error('Span stream error:', error);
+      setError(new Error('Lost connection to span stream'));
+    };
+
+    // Subscribe to span and log streams
+    eventSourceRef.current = telemetryService.subscribeToSpans(handleSpanData, handleError);
+    logEventSourceRef.current = telemetryService.subscribeToLogs(handleLogData, handleError);
+
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current();
+        eventSourceRef.current = null;
+      }
+      if (logEventSourceRef.current) {
+        logEventSourceRef.current();
+        logEventSourceRef.current = null;
+      }
+    };
+  }, [autoRefreshEnabled, maxSpans, maxLogs]);
+
+  // Load initial data
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
 
   return {
-    traces,
     logs,
+    spans,
     isLoading,
     error,
     refreshData,

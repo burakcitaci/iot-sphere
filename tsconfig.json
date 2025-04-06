@@ -10,7 +10,10 @@
       "path": "./apps/frontend/dashboard"
     },
     {
-      "path": "./shared/entity-lib"
+      "path": "./apps/backend/devices"
+    },
+    {
+      "path": "./apps/backend/shared/otel-library"
     }
   ]
 }

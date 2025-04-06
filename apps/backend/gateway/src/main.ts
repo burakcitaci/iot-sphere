@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter } from './app/shared/filters/http-exception.filter';
+import { LoggerProvider } from '@opentelemetry/sdk-logs';
+
 
 /*************  ✨ Codeium Command ⭐  *************/
 /**
@@ -19,7 +21,7 @@ import { HttpExceptionFilter } from './app/shared/filters/http-exception.filter'
  * 5. Listens on the specified port.
  * 6. Logs a message to the console indicating the application is running.
  */
-/******  91b51717-d546-499d-b448-d715f0a013ea  *******/ 
+/******  91b51717-d546-499d-b448-d715f0a013ea  *******/
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
@@ -55,16 +57,19 @@ async function bootstrap() {
 
   // Global prefix
   const globalPrefix = configService.get('api.prefix');
-  app.setGlobalPrefix(globalPrefix);
+  
+  app.setGlobalPrefix('api');
 
   // Start the application
   const port = configService.get('port');
-  await app.listen(port);
+  await app.listen(3001);
 
   Logger.log(
     `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
   );
-  Logger.log(`📚 API Documentation available at: http://localhost:${port}/api/docs`);
+  Logger.log(
+    `📚 API Documentation available at: http://localhost:${port}/api/docs`
+  );
 }
 
 bootstrap();
