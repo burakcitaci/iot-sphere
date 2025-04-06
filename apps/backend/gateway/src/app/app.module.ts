@@ -4,14 +4,21 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SharedModule } from './shared/shared.module';
-import { HealthModule } from './health/health.module';
-import { TelemetryModule } from './telemetry/telemetry.module';
+//import { HealthModule } from './health/health.module';
 import { DevicesModule } from './devices/devices.module';
 import { Device } from './devices/entities/device.entity';
 import configuration from './config/configuration';
 
+import { OtelLoggerModule, TraceModule,DaprModule } from '@gateway/otel-library'; 
+import { TerminusModule } from '@nestjs/terminus';
+import { LogsService } from './logs/logs.service';
+import { LogsController } from './logs/logs.controller';
+import { SpansController } from './spans/spans.controller';
+import { SpansService } from './spans/spans.service';
+
 @Module({
   imports: [
+    OtelLoggerModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
@@ -33,12 +40,14 @@ import configuration from './config/configuration';
       }),
       inject: [ConfigService],
     }),
-    SharedModule,
-    HealthModule,
-    TelemetryModule,
+   
+   /*  SharedModule, */
+   /*  HealthModule, */
     DevicesModule,
+    TraceModule,
+    DaprModule
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, LogsController, SpansController],
+  providers: [AppService, LogsService, SpansService],
 })
 export class AppModule {}

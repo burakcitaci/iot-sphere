@@ -10,7 +10,7 @@ const swcJestConfig = JSON.parse(
 swcJestConfig.swcrc = false;
 
 export default {
-  displayName: '@iot-spehere/gateway',
+  displayName: 'gateway',
   preset: '../../../jest.preset.js',
   testEnvironment: 'node',
   transform: {

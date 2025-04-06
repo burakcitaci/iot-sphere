@@ -1,7 +1,14 @@
 export default () => ({
-  port: parseInt(process.env.PORT ?? '3001', 10),
+  port: parseInt(process.env.APP_PORT ?? process.env.PORT ?? '3000', 10),
   api: {
     prefix: process.env.API_PREFIX || 'api',
+  },
+  dapr: {
+    port: 3502
+  },
+  resource: {
+    name: 'gateway-api',
+    version: '0.0.1'
   },
   cors: {
     enabled: process.env.CORS_ENABLED === 'true',

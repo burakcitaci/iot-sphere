@@ -5,6 +5,7 @@ import { HttpModule } from '@nestjs/axios';
 import configuration from '../config/configuration';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Global()
 @Module({
@@ -13,8 +14,9 @@ import { APP_FILTER } from '@nestjs/core';
       isGlobal: true,
       load: [configuration],
     }),
-    TerminusModule,
     HttpModule,
+/*     TerminusModule,
+    TypeOrmModule */
   ],
   providers: [
     {
@@ -22,6 +24,6 @@ import { APP_FILTER } from '@nestjs/core';
       useClass: HttpExceptionFilter,
     },
   ],
-  exports: [ConfigModule, TerminusModule, HttpModule],
+  exports: [ConfigModule, HttpModule, TypeOrmModule],
 })
 export class SharedModule {} 

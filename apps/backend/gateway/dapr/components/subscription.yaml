@@ -3,12 +3,10 @@ kind: Subscription
 metadata:
   name: telemetry-subscription
 spec:
-  topic: telemetry
-  route: /telemetry
-  pubsubname: pubsub
-  deadLetterTopic: telemetry-dlq
-  retryPolicy:
-    maxRetries: 3
-    maxRetryBackoff: 2s 
-  scopes:
-    - gateway-api
+  topic: spans
+  route: /api/telemetry/spans
+  pubsubname: telemetry-pubsub
+  metadata:
+    rawPayload: "true"
+scopes:
+  - gateway-api

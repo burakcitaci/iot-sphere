@@ -1,15 +1,26 @@
-import { Injectable } from '@nestjs/common';
-import { SpanContext } from '@opentelemetry/api';
-import { IResource } from '@opentelemetry/resources';
-import { ReadableSpan } from '@opentelemetry/sdk-trace-node';
+import { Injectable, Inject } from '@nestjs/common';
+import type { SpanContext } from '@opentelemetry/api';
+import type { IResource } from '@opentelemetry/resources';
+import type { ReadableSpan } from '@opentelemetry/sdk-trace-node';
+import { CentralLoggerService, Trace } from '@gateway/otel-library';
 
 @Injectable()
 export class AppService {
+  constructor(
+    private readonly logger: CentralLoggerService
+  ) {}
+
+  @Trace({
+    spanName: 'get-data',
+    captureArgs: true
+  })
   getData(): { message: string } {
+    this.logger.log('Getting data from service');
     return { message: 'Hello API' };
   }
 
   getSpanById(spanId: string): ReadableSpan {
+    this.logger.debug('Getting span by ID', spanId);
     const span: ReadableSpan = {
       name: 'GET',
       attributes: {

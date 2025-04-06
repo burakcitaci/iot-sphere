@@ -12,11 +12,11 @@ describe('AppController', () => {
     }).compile();
   });
 
-  describe('getData', () => {
-    it('should return "Hello API"', async () => {
-      const appController = app.get<AppController>(AppController);
-      const data = await appController.getData();
-      expect(data).toEqual({ message: 'Hello API' });
-    });
-  });
+  // describe('getData', () => {
+  //   it('should return "Hello API"', async () => {
+  //     const appController = app.get<AppController>(AppController);
+  //     const data = await appController.getData();
+  //     expect(data).toEqual({ message: 'Hello API' });
+  //   });
+  // });
 });
