@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { telemetryService, type SpanData, type CustomLogRecord } from '@/services/telemetry';
+import { telemetryService, type SpanData, type CustomLogRecord, SafeLog } from '@/services/telemetry';
 import { ReadableSpan } from '@opentelemetry/sdk-trace-node';
 
 
 export function useTelemetry(autoRefreshEnabled = true) {
-  const [logs, setLogs] = useState<CustomLogRecord[]>([]);
+  const [logs, setLogs] = useState<SafeLog[]>([]);
   const [spans, setSpans] = useState<ReadableSpan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -71,7 +71,7 @@ export function useTelemetry(autoRefreshEnabled = true) {
       });
     };
 
-    const handleLogData = (log: CustomLogRecord) => {
+    const handleLogData = (log: SafeLog) => {
       console.log(log)
       setLogs(prevLogs => {
         const newLogs = [log, ...prevLogs];
