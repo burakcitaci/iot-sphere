@@ -1,6 +1,7 @@
 import { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ExportResult, ExportResultCode } from '@opentelemetry/core';
 import { DaprClient } from '@dapr/dapr';
+import { CentralLoggerService } from '../logger/logger.service';
 
 export interface SpanData {
   traceId: string;
@@ -23,28 +24,26 @@ export class TraceExporter implements SpanExporter {
     
   // }
   private daprClient: DaprClient;
-  
-  constructor(daprClient: DaprClient) {
+  private logService: CentralLoggerService;
+  constructor(daprClient: DaprClient, logService: CentralLoggerService) {
     this.daprClient = daprClient;
+    this.logService = logService;
   }
   async export(spans: ReadableSpan[], resultCallback: (result: ExportResult) => void) {
     try {
       for (const span of spans) {
-
-        console.log('recieved span', span)
         const safeSpan = {
           name: span.name,
           startTime: span.startTime,
           endTime: span.endTime,
           status: span.status,
           attributes: span.attributes,
-          traceId: span.spanContext().traceId,
-          spanId: span.spanContext().spanId,
+          spanContext: span.spanContext()
         };
   
-        console.log('Exporting span:', safeSpan);
-        span.attributes.a
-        await this.daprClient.pubsub.publish('pubsub2', 'my-span', this.safeStringify(span));
+        this.logService.log('Exporting span:', span.name);
+    
+        await this.daprClient.pubsub.publish('pubsub2', 'my-span', JSON.stringify(safeSpan));
         console.log('✅ Span published successfully');
       }
   

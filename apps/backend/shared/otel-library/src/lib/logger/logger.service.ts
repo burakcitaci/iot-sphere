@@ -11,9 +11,9 @@ export class CentralLoggerService implements LoggerService {
 
   constructor(
     private readonly configService: ConfigService,
-    @Inject('OTEL_LOGGER_PROVIDER') private readonly loggerProvider: LoggerProvider
+    private readonly loggerProvider: LoggerProvider
   ) {
-    this.otelLogger = this.loggerProvider.getLogger('devices-api');
+    this.otelLogger = this.loggerProvider.getLogger('gateway-api');
   }
 
   log(message: any, ...optionalParams: any[]) {
@@ -66,11 +66,16 @@ export class CentralLoggerService implements LoggerService {
   }
 
   private formatMessage(message: any, optionalParams: any[]): string {
-    if (typeof message === 'object') {
-      return JSON.stringify(message);
-    }
-    return message + (optionalParams.length ? ' ' + optionalParams.join(' ') : '');
+    const base =
+      typeof message === 'object' ? JSON.stringify(message) : String(message);
+  
+    const extras = optionalParams
+      .map(param => (typeof param === 'object' ? JSON.stringify(param) : String(param)))
+      .join(' ');
+  
+    return [base, extras].filter(Boolean).join(' ');
   }
+  
 
   private getAttributes(optionalParams: any[]): Record<string, any> {
     const attributes: Record<string, any> = {};

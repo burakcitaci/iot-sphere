@@ -35,7 +35,7 @@ import {
   WifiOff
 } from 'lucide-react';
 import { type SpanData} from '@/services/telemetry';
-import { SpanStatusCode } from '@opentelemetry/api';
+import { SpanContext, SpanStatusCode } from '@opentelemetry/api';
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -63,7 +63,15 @@ function StatusBadge({ code }: { code: SpanStatusCode }) {
     </Badge>
   );
 }
+function getSpanContext(span: ReadableSpan | { spanContext: SpanContext }): SpanContext {
+  if (typeof span.spanContext === 'function') {
+    console.log(span.spanContext())
+    return span.spanContext();
+  }
 
+  console.log(span.spanContext)
+  return span.spanContext;
+}
 function SpanDetails({ span }: { span: ReadableSpan }) {
   const hasEvents = span.events && span.events.length > 0;
   const hasLinks = span.links && span.links.length > 0;
@@ -75,9 +83,9 @@ function SpanDetails({ span }: { span: ReadableSpan }) {
         <div className="space-y-1 text-sm">
           {/* <div><span className="text-gray-500">Trace ID:</span> {span.spanContext().traceId}</div>
           <div><span className="text-gray-500">Span ID:</span> {span.spanContext().spanId}</div> */}
-          {span.parentSpanId && (
+          {/* {span.parentSpanId && (
             <div><span className="text-gray-500">Parent Span:</span> {span.parentSpanId}</div>
-          )}
+          )} */}
         </div>
       </div>
 
@@ -92,7 +100,7 @@ function SpanDetails({ span }: { span: ReadableSpan }) {
         <div>
           <h4 className="mb-2 font-medium">Events</h4>
           <div className="space-y-2">
-            {span.events.map((event, index) => (
+            {span.events.map((event:any, index:any) => (
               <div key={index} className="rounded border bg-card p-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{event.name}</span>
@@ -147,8 +155,8 @@ export function TelemetryViewer() {
 
   useEffect(() => {
     const newIds = spans
-      .filter(span => !prevSpansRef.current.find(p => p.spanContext().spanId === span.spanContext().spanId))
-      .map(span => span.spanContext().spanId);
+      .filter(span => !prevSpansRef.current.find(p => getSpanContext(p).spanId === getSpanContext(span).spanId))
+      .map(span =>  getSpanContext(span).spanId);
     
     if (newIds.length > 0) {
       setNewSpanIds(new Set(newIds));
@@ -182,7 +190,7 @@ export function TelemetryViewer() {
       // Adjust this filter logic as needed for your log structure
       const matchesSearch =
         logSearchQuery === '' ||
-        (log.message && log.message.toLocaleString().toLowerCase().includes(logSearchQuery.toLowerCase())) ;
+        (log.body && log.body.toLocaleString().toLowerCase().includes(logSearchQuery.toLowerCase())) ;
         //||
         // (log.severityText && log.severityText.toLowerCase().includes(logSearchQuery.toLowerCase()));
       return matchesSearch;
@@ -216,7 +224,34 @@ export function TelemetryViewer() {
   }, [filteredSpans, currentPage, pageSize]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSpans.length / pageSize));
-
+  function formatHrTime(hrTime: [number, number]): string {
+    const [seconds, nanos] = hrTime ?? [0, 0];
+    const millis = seconds * 1000 + Math.floor(nanos / 1_000_000);
+    const date = new Date(millis);
+  
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Europe/Berlin',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+  
+    const parts = formatter.formatToParts(date);
+    const get = (type: string) => parts.find(p => p.type === type)?.value || '';
+  
+    const month = get('month');
+    const day = get('day');
+    const hour = get('hour');
+    const minute = get('minute');
+    const second = get('second');
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+  
+    return `${month} ${day} ${hour}:${minute}:${second}.${milliseconds}`;
+  }
+  
   return (
     <Card className="w-full">
       <CardHeader className="pb-0">
@@ -337,9 +372,9 @@ export function TelemetryViewer() {
                               key={crypto.randomUUID()}
                               className={cn(
                                 "cursor-pointer transition-colors hover:bg-muted/50",
-                                {
-                                  "bg-green-50": newSpanIds.has(span.spanContext().spanId),
-                                }
+                               /*  {
+                                  "bg-green-50": newSpanIds.has(getSpanContext(span).spanId),
+                                } */
                               )}
                               onClick={() => setSelectedSpan(span)}
                             >
@@ -385,73 +420,72 @@ export function TelemetryViewer() {
               </div>
             ) : (
               <div className="mt-4">
-                <ScrollArea className="h-[600px]">
-                  <Table>
-                    <TableHeader>
+              <ScrollArea className="h-[600px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-1"></TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Host</TableHead>
+                      <TableHead>Service</TableHead>
+                      <TableHead>Content</TableHead>
+                      <TableHead>Log Level</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedLogs.length === 0 ? (
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Trace ID</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Duration</TableHead>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          {searchQuery || statusFilter !== 'all'
+                            ? 'No spans match the current filters'
+                            : 'No spans available'}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedLogs.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground">
-                            {searchQuery || statusFilter !== 'all'
-                              ? 'No spans match the current filters'
-                              : 'No spans available'}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        <AnimatePresence>
-                          {paginatedLogs.map((span) => (
+                    ) : (
+                      <AnimatePresence>
+                        {paginatedLogs.map((span) => {
+                         const getBorderColor = () => {
+                          switch(span.severityText) {
+                            case "INFO": return "#60a5fa"; // blue-400
+                            case "DEBUG": return "#9ca3af"; // gray-400
+                            case "WARN": return "#fbbf24"; // yellow-400
+                            case "ERROR": return "#f87171"; // red-400
+                            case "CRITICAL": return "#db2777"; // pink-600
+                            default: return "#e5e7eb"; // bg-muted
+                          }
+                        };
+                          return (
                             <TableRow
-                              key={crypto.randomUUID()}
-                              className={cn(
-                                "cursor-pointer transition-colors hover:bg-muted/50",
-                                {
-                                  "bg-green-50": newSpanIds.has(span.message || ''),
-                                }
-                              )}
-                              // onClick={() => setSelectedSpan(span)}
-                            >
-                              <TableCell className="font-medium">{span.message}</TableCell>
-                              <TableCell className="font-medium">{span.timestamp}</TableCell>
-                              {/* <TableCell>
-                                <StatusBadge code={span.status.code} />
+                            key={crypto.randomUUID()}
+                            className="group cursor-pointer transition-colors hover:bg-muted/50"
+                            style={{ borderLeft: `4px solid ${getBorderColor()}` }}
+                          >
+                              <TableCell className="p-0 w-1">
+                              <div className={`h-full w-1 bg-red-400`} />
                               </TableCell>
-                              <TableCell className="font-mono text-xs">
-                                {span.traceId.slice(0, 8)}...
-                              </TableCell>
-                              <TableCell>
-                                {new Date(span.startTime).toLocaleString()}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-1">
-                                  <Clock className="h-3 w-3 text-muted-foreground" />
-                                  <span>{formatDuration(span.duration)}</span>
-                                </div>
-                              </TableCell> */}
+                              <TableCell className="font-medium">{formatHrTime(span.hrTime)}</TableCell>
+                              <TableCell className="font-medium">{span.host}</TableCell>
+                              <TableCell className="font-medium">{span.serviceName}</TableCell>
+                              <TableCell className="font-medium">{span.body}</TableCell>
+                              <TableCell className="font-medium">{span.severityText}</TableCell>
                             </TableRow>
-                          ))}
-                        </AnimatePresence>
-                      )}
-                    </TableBody>
-                  </Table>
-                  {paginatedSpans.length > 0 && (
-                    <div className="mt-4">
-                      <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                      />
-                    </div>
-                  )}
-                </ScrollArea>
-              </div>
+                          );
+                        })}
+                      </AnimatePresence>
+                    )}
+                  </TableBody>
+                </Table>
+                {paginatedSpans.length > 0 && (
+                  <div className="mt-4">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                    />
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
             )}
           </TabsContent>
         </Tabs>

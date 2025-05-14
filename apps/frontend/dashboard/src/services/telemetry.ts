@@ -1,8 +1,9 @@
-import { fetchClient } from '@/lib/fetch-client';
-import config from '@/config/config';
+
 import { LogRecordExporter, ReadableLogRecord } from '@opentelemetry/sdk-logs';
 import { log } from 'console';
 import { ReadableSpan } from '@opentelemetry/sdk-trace-node';
+import { te } from 'date-fns/locale';
+import config from 'src/config/config';
 export interface SpanData {
   traceId: string;
   spanId: string;
@@ -38,8 +39,17 @@ export interface CustomLogRecord {
   spanId?: string;
   traceId?: string;
   scope?: string;
+  
 }
-
+export interface SafeLog {
+  body: any;
+  severityText: string;
+  hrTime: [number, number]; // hrTime is a tuple like [seconds, nanoseconds]
+  serviceName?: string;
+  serviceVersion?: string;
+  environment?: string;
+  host: string;
+}
 
 class TelemetryService {
   private readonly baseUrl = config.api.baseUrl;
@@ -114,7 +124,7 @@ class TelemetryService {
     }
   }
 
-  async getLogs(): Promise<CustomLogRecord[]> {
+  async getLogs(): Promise<SafeLog[]> {
     try {
       //const response = await fetchClient.get<Log[]>(`${this.baseUrl}/telemetry/logs`);
       //return response.data || [];
@@ -161,7 +171,7 @@ class TelemetryService {
     };
   }
 
-  subscribeToLogs(onMessage: (log: CustomLogRecord) => void, onError?: (error: Event) => void): () => void {
+  subscribeToLogs(onMessage: (log: SafeLog) => void, onError?: (error: Event) => void): () => void {
     this.closeLogEventSource();
 
     const url = `http://localhost:3001/api/logs/stream`;
@@ -170,9 +180,14 @@ class TelemetryService {
     this.logEventSource.onmessage = (event) => {
       try {
         const parsedEvent = JSON.parse(event.data);
+        console.log(parsedEvent)
         const spanData = parsedEvent.data ? parsedEvent.data : parsedEvent;
-        const logData = spanData as ReadableLogRecord;
-        onMessage(this.mapReadableLogRecordToCustom(logData));
+        const temp = spanData as SafeLog;
+        console.log(temp)
+        const logData = spanData as SafeLog;
+        console.log(logData.body)
+        onMessage(logData)
+        //onMessage(this.mapReadableLogRecordToCustom(logData));
         this.logReconnectAttempts = 0;
       } catch (error) {
         console.error('Error parsing log data:', error, event.data);
@@ -225,7 +240,7 @@ class TelemetryService {
     }, delay);
   }
 
-  private reconnectLogStream(onMessage: (log: CustomLogRecord) => void, onError?: (error: Event) => void): void {
+  private reconnectLogStream(onMessage: (log: SafeLog) => void, onError?: (error: Event) => void): void {
     if (this.logReconnectAttempts >= this.maxReconnectAttempts) {
       console.error('Max log reconnection attempts reached');
       return;

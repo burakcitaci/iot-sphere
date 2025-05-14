@@ -4,12 +4,15 @@ import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { trace, context } from '@opentelemetry/api';
 import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes  } from '@opentelemetry/resources';
 import { TraceExporter } from './trace.exporter';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { ClientRequest, IncomingMessage, ServerResponse } from 'http';
 import { DaprClient } from '@dapr/dapr';
 import { DAPR_CLIENT } from '../dapr/dapr.module';
+import { CentralLoggerService } from '../logger/logger.service';
+import { OtelLoggerModule } from '../logger/logger.module';
 
 @Global()
 @Module({
@@ -17,23 +20,25 @@ import { DAPR_CLIENT } from '../dapr/dapr.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    OtelLoggerModule
   ],
   providers: [
     {
       provide: 'OTEL_TRACER_PROVIDER',
-      useFactory: (configService: ConfigService, daprClient: DaprClient) => {
+      useFactory: (configService: ConfigService, daprClient: DaprClient, logService: CentralLoggerService) => {
         const daprPort = configService.get<string>('dapr.port');
-        console.log('DAPR (for trace): ' + daprPort);
+        console.log('DAPR (for trace): ' + logService);
 
-    
+        const serviceName = configService.get('resource.name');
+        const serviceVersion = configService.get('resource.version')
         const provider = new NodeTracerProvider({
-          resource: new Resource({
-            'service.name': 'devices-api',
-            'service.version': '1.0.0',
+          resource:  resourceFromAttributes({
+            'service.name': serviceName,
+            'service.version': serviceVersion
           }),
           spanProcessors:[
             new BatchSpanProcessor(
-                new TraceExporter(daprClient), // Replace with your real exporter
+                new TraceExporter(daprClient, logService), // Replace with your real exporter
                 {
                   maxExportBatchSize: 100,
                   scheduledDelayMillis: 1000,
@@ -75,7 +80,7 @@ import { DAPR_CLIENT } from '../dapr/dapr.module';
 
         return provider;
       },
-      inject: [ConfigService, DAPR_CLIENT],
+      inject: [ConfigService, DAPR_CLIENT, CentralLoggerService],
     },
   ],
   exports: ['OTEL_TRACER_PROVIDER'],
