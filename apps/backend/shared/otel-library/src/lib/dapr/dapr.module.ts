@@ -11,22 +11,26 @@ export const DAPR_SERVER = 'DAPR_SERVER';
     DaprService,
     {
       provide: DAPR_SERVER,
-      useFactory: async (logsService: DaprService) => {
+      useFactory: async (daprService: DaprService) => {
         const daprServer = new DaprServer();
         process.on('SIGINT', async () => {
           await daprServer.stop();
           process.exit(0);
         });
         await daprServer.pubsub.subscribe('pubsub', 'my-topic', async (data) => {
-          logsService.pushLog(data);
+          daprService.pushLog(data);
           return { success: true };
         });
       
         await daprServer.pubsub.subscribe('pubsub2', 'my-span', async (data) => {
-          logsService.pushSpan(data)
+          daprService.pushSpan(data)
           return { success: true };
         });
       
+        await daprServer.pubsub.subscribe('pubsub3', 'my-metric', async (data) => {
+          daprService.pushMetric(data);
+          return { success: true };
+        });
         await daprServer.start();
         return daprServer;
       },

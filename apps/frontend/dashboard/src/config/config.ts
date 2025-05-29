@@ -14,6 +14,7 @@ interface Config {
   telemetry: {
     spanStreamUrl: string;
     logStreamUrl: string;
+    metricStreamUrl: string;
   };
 }
 
@@ -34,6 +35,7 @@ const config: Config = {
   telemetry: {
     spanStreamUrl: import.meta.env.VITE_SPAN_STREAM_URL || 'http://localhost:3001/api/spans/stream',
     logStreamUrl: import.meta.env.VITE_LOG_STREAM_URL || 'http://localhost:3001/api/logs/stream',
+    metricStreamUrl: import.meta.env.VITE_METRIC_STREAM_URL || 'http://localhost:3001/api/metrics/stream',
   },
 };
 

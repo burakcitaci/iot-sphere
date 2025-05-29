@@ -1,16 +1,113 @@
 import { useState } from 'react';
 import { Clock, Search, Filter, Plus, Activity, Database, Server } from 'lucide-react';
 
-import { MetricsChart } from '@/components/metrics-chart';
-import { PageHeader } from '@/components/common/PageHeader';
-import { SearchInput } from '@/components/common/SearchInput';
-import { StatCard } from '@/components/common/StatCard';
+// Type definitions
+interface Query {
+  id: number;
+  metric: string;
+  aggregation: string;
+  groupBy: string;
+  filters: any[];
+}
 
-export const MetricExplorer = () => {
-  const [timeRange, setTimeRange] = useState('15m');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [queries, setQueries] = useState([
+interface MetricsChartProps {
+  queries: Query[];
+  timeRange: string;
+}
+
+interface PageHeaderProps {
+  title: string;
+  description: string;
+  autoRefresh: boolean;
+  onAutoRefreshChange: (value: boolean) => void;
+  onRefresh: () => void;
+}
+
+interface SearchInputProps {
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+}
+
+interface StatCardProps {
+  title: string;
+  value: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+type MetricType = 'counter' | 'histogram' | 'gauge';
+
+// Mock MetricsChart component since it's imported
+const MetricsChart: React.FC<MetricsChartProps> = ({ queries, timeRange }) => (
+  <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded">
+    <div className="text-center text-gray-500">
+      <Activity className="h-8 w-8 mx-auto mb-2" />
+      <p className="text-sm">Chart visualization for {queries.length} queries</p>
+      <p className="text-xs text-gray-400">Time range: {timeRange}</p>
+    </div>
+  </div>
+);
+
+// Mock components
+const PageHeader: React.FC<PageHeaderProps> = ({ title, description, autoRefresh, onAutoRefreshChange, onRefresh }) => (
+  <div className="mb-6">
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        <p className="text-gray-600 mt-1">{description}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={autoRefresh}
+            onChange={(e) => onAutoRefreshChange(e.target.checked)}
+            className="rounded"
+          />
+          Auto-refresh
+        </label>
+        <button
+          onClick={onRefresh}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+        >
+          Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const SearchInput: React.FC<SearchInputProps> = ({ placeholder, value, onChange, className }) => (
+  <div className={`relative ${className}`}>
+    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded text-sm"
+    />
+  </div>
+);
+
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon }) => (
+  <div className="bg-white border border-gray-200 rounded p-3 shadow-sm">
+    <div className="flex items-center gap-2">
+      <Icon className="h-4 w-4 text-blue-500" />
+      <div>
+        <p className="text-xs text-gray-600">{title}</p>
+        <p className="text-sm font-semibold">{value}</p>
+      </div>
+    </div>
+  </div>
+);
+
+export function MetricExplorer() {
+  const [timeRange, setTimeRange] = useState<string>('15m');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
+  const [queries, setQueries] = useState<Query[]>([
     {
       id: 1,
       metric: 'system.cpu.user',
@@ -20,7 +117,9 @@ export const MetricExplorer = () => {
     }
   ]);
 
+  // Enhanced metrics list including your HTTP metric
   const metrics = [
+    // System metrics
     'system.cpu.user',
     'system.cpu.system', 
     'system.memory.used',
@@ -28,16 +127,41 @@ export const MetricExplorer = () => {
     'system.disk.used',
     'system.network.bytes_sent',
     'system.network.bytes_rcvd',
+    
+    // Application metrics
     'application.requests.rate',
     'application.response.time',
-    'database.connections.active'
+    
+    // HTTP metrics (from your OpenTelemetry data)
+    'http_requests_total',
+    'http_request_duration',
+    'http_response_size',
+    
+    // Database metrics
+    'database.connections.active',
+    'database.query.duration',
+    'database.pool.size'
   ];
 
-  const aggregations = ['avg', 'sum', 'min', 'max', 'count', 'rate'];
-  const groupByOptions = ['everything', 'host', 'service', 'environment', 'region'];
+  // Enhanced aggregations - rate is particularly useful for counters like http_requests_total
+  const aggregations: string[] = ['avg', 'sum', 'min', 'max', 'count', 'rate', 'increase'];
+  
+  // Enhanced groupBy options including HTTP-specific attributes
+  const groupByOptions: string[] = [
+    'everything', 
+    'host', 
+    'service', 
+    'environment', 
+    'region',
+    // HTTP-specific grouping options
+    'method',      // GET, POST, etc.
+    'route',       // API endpoints
+    'status_code', // HTTP status codes
+    'status_class' // 2xx, 4xx, 5xx
+  ];
 
-  const addQuery = () => {
-    const newQuery = {
+  const addQuery = (): void => {
+    const newQuery: Query = {
       id: Date.now(),
       metric: '',
       aggregation: 'avg',
@@ -47,20 +171,35 @@ export const MetricExplorer = () => {
     setQueries([...queries, newQuery]);
   };
 
-  const updateQuery = (id: number, updates: any) => {
+  const updateQuery = (id: number, updates: Partial<Query>): void => {
     setQueries(queries.map(q => q.id === id ? { ...q, ...updates } : q));
   };
 
-  const removeQuery = (id: number) => {
+  const removeQuery = (id: number): void => {
     setQueries(queries.filter(q => q.id !== id));
   };
 
-  const handleRefresh = () => {
-    // Mock refresh functionality
+  const handleRefresh = (): void => {
     console.log('Refreshing metrics...');
   };
 
-  const filteredMetrics = metrics.filter(metric =>
+  // Get metric type for better UX
+  const getMetricType = (metricName: string): MetricType => {
+    if (metricName.includes('_total') || metricName.includes('count')) return 'counter';
+    if (metricName.includes('duration') || metricName.includes('time')) return 'histogram';
+    if (metricName.includes('size') || metricName.includes('bytes')) return 'gauge';
+    return 'gauge';
+  };
+
+  // Suggest appropriate aggregation based on metric type
+  const getDefaultAggregation = (metricName: string): string => {
+    const type = getMetricType(metricName);
+    if (type === 'counter') return 'rate'; // For counters like http_requests_total
+    if (type === 'histogram') return 'avg'; // For duration metrics
+    return 'avg'; // Default for gauges
+  };
+
+  const filteredMetrics: string[] = metrics.filter(metric =>
     metric.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -70,7 +209,7 @@ export const MetricExplorer = () => {
         {/* Header */}
         <PageHeader
           title="Metrics Explorer"
-          description="Monitor and analyze your application metrics"
+          description="Monitor and analyze your application metrics including HTTP requests"
           autoRefresh={autoRefresh}
           onAutoRefreshChange={setAutoRefresh}
           onRefresh={handleRefresh}
@@ -93,13 +232,18 @@ export const MetricExplorer = () => {
             value={metrics.length.toString()}
             icon={Database}
           />
+          <StatCard
+            title="HTTP Metrics"
+            value={metrics.filter(m => m.startsWith('http_')).length.toString()}
+            icon={Server}
+          />
         </div>
 
         {/* Top Search and Controls */}
         <div className="bg-white rounded border border-gray-200 p-3 mb-3 shadow-sm">
           <div className="flex items-center gap-3">
             <SearchInput
-              placeholder="Search metrics..."
+              placeholder="Search metrics (try 'http' or 'cpu')..."
               value={searchQuery}
               onChange={setSearchQuery}
               className="flex-grow"
@@ -128,7 +272,7 @@ export const MetricExplorer = () => {
         {/* Main Content */}
         <div className="flex gap-3">
           {/* Left Sidebar - Query Builder */}
-          <div className="w-60 bg-white rounded border border-gray-200 p-3 shadow-sm h-fit">
+          <div className="w-72 bg-white rounded border border-gray-200 p-3 shadow-sm h-fit">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-900">Queries</h3>
               <button
@@ -144,14 +288,21 @@ export const MetricExplorer = () => {
               {queries.map((query, index) => (
                 <div key={query.id} className="p-3 bg-gray-50 rounded border space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
-                      index === 0 ? 'bg-blue-100 text-blue-700' :
-                      index === 1 ? 'bg-green-100 text-green-700' :
-                      index === 2 ? 'bg-purple-100 text-purple-700' :
-                      'bg-orange-100 text-orange-700'
-                    }`}>
-                      Query {String.fromCharCode(65 + index)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                        index === 0 ? 'bg-blue-100 text-blue-700' :
+                        index === 1 ? 'bg-green-100 text-green-700' :
+                        index === 2 ? 'bg-purple-100 text-purple-700' :
+                        'bg-orange-100 text-orange-700'
+                      }`}>
+                        Query {String.fromCharCode(65 + index)}
+                      </span>
+                      {query.metric && (
+                        <span className="text-xs text-gray-500 bg-gray-200 px-1 py-0.5 rounded">
+                          {getMetricType(query.metric)}
+                        </span>
+                      )}
+                    </div>
                     {queries.length > 1 && (
                       <button
                         onClick={() => removeQuery(query.id)}
@@ -167,15 +318,45 @@ export const MetricExplorer = () => {
                       <label className="text-xs font-medium text-gray-700 block mb-1">Metric</label>
                       <select
                         value={query.metric}
-                        onChange={(e) => updateQuery(query.id, { metric: e.target.value })}
+                        onChange={(e) => {
+                          const newMetric = e.target.value;
+                          const defaultAgg = getDefaultAggregation(newMetric);
+                          updateQuery(query.id, { 
+                            metric: newMetric,
+                            aggregation: defaultAgg
+                          });
+                        }}
                         className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-xs"
                       >
                         <option value="">Select metric</option>
-                        {filteredMetrics.map((metric) => (
-                          <option key={metric} value={metric}>
-                            {metric}
-                          </option>
-                        ))}
+                        <optgroup label="System Metrics">
+                          {filteredMetrics.filter(m => m.startsWith('system.')).map((metric) => (
+                            <option key={metric} value={metric}>
+                              {metric}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="HTTP Metrics">
+                          {filteredMetrics.filter(m => m.startsWith('http_')).map((metric) => (
+                            <option key={metric} value={metric}>
+                              {metric}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Application Metrics">
+                          {filteredMetrics.filter(m => m.startsWith('application.')).map((metric) => (
+                            <option key={metric} value={metric}>
+                              {metric}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Database Metrics">
+                          {filteredMetrics.filter(m => m.startsWith('database.')).map((metric) => (
+                            <option key={metric} value={metric}>
+                              {metric}
+                            </option>
+                          ))}
+                        </optgroup>
                       </select>
                     </div>
 
@@ -190,6 +371,7 @@ export const MetricExplorer = () => {
                           {aggregations.map((agg) => (
                             <option key={agg} value={agg}>
                               {agg}
+                              {agg === 'rate' && query.metric.includes('_total') ? ' (recommended)' : ''}
                             </option>
                           ))}
                         </select>
@@ -203,13 +385,26 @@ export const MetricExplorer = () => {
                           className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-xs"
                         >
                           {groupByOptions.map((option) => (
-                            <option key={option} value={option}>
+                            <option 
+                              key={option} 
+                              value={option}
+                              disabled={!query.metric.startsWith('http_') && ['method', 'route', 'status_code', 'status_class'].includes(option)}
+                            >
                               {option}
+                              {query.metric.startsWith('http_') && ['method', 'route', 'status_code'].includes(option) ? ' (HTTP)' : ''}
                             </option>
                           ))}
                         </select>
                       </div>
                     </div>
+
+                    {/* Show helpful info for HTTP metrics */}
+                    {query.metric === 'http_requests_total' && (
+                      <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                        💡 This counter tracks total HTTP requests. Use 'rate' aggregation to see requests/second.
+                        Group by 'method', 'route', or 'status_code' for detailed breakdown.
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -248,10 +443,54 @@ export const MetricExplorer = () => {
               <div className="px-3 py-2 border-b border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-900">
                   {queries[0]?.metric ? `${queries[0].aggregation}:${queries[0].metric}(*)` : 'No metrics selected'}
+                  {queries[0]?.groupBy !== 'everything' && ` by ${queries[0].groupBy}`}
                 </h3>
               </div>
               <div className="p-4">
                 <MetricsChart queries={queries} timeRange={timeRange} />
+              </div>
+            </div>
+
+            {/* Quick Actions for HTTP Metrics */}
+            <div className="mt-3 bg-white rounded border border-gray-200 p-3 shadow-sm">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">Quick HTTP Metric Queries</h4>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setQueries([{
+                    id: Date.now(),
+                    metric: 'http_requests_total',
+                    aggregation: 'rate',
+                    groupBy: 'method',
+                    filters: []
+                  }])}
+                  className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded border border-blue-200"
+                >
+                  Request Rate by Method
+                </button>
+                <button
+                  onClick={() => setQueries([{
+                    id: Date.now(),
+                    metric: 'http_requests_total',
+                    aggregation: 'rate',
+                    groupBy: 'status_code',
+                    filters: []
+                  }])}
+                  className="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200"
+                >
+                  Request Rate by Status
+                </button>
+                <button
+                  onClick={() => setQueries([{
+                    id: Date.now(),
+                    metric: 'http_requests_total',
+                    aggregation: 'rate',
+                    groupBy: 'route',
+                    filters: []
+                  }])}
+                  className="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded border border-purple-200"
+                >
+                  Request Rate by Route
+                </button>
               </div>
             </div>
           </div>
@@ -259,4 +498,4 @@ export const MetricExplorer = () => {
       </div>
     </div>
   );
-};
+}

@@ -9,12 +9,13 @@ import { DevicesModule } from './devices/devices.module';
 import { Device } from './devices/entities/device.entity';
 import configuration from './config/configuration';
 
-import { OtelLoggerModule, TraceModule,DaprModule } from '@gateway/otel-library'; 
+import { OtelLoggerModule, TraceModule,DaprModule, MetricModule } from '@gateway/otel-library'; 
 import { TerminusModule } from '@nestjs/terminus';
 import { LogsService } from './logs/logs.service';
 import { LogsController } from './logs/logs.controller';
 import { SpansController } from './spans/spans.controller';
 import { SpansService } from './spans/spans.service';
+import { MetricsController } from './metrics/metrics.controller';
 
 @Module({
   imports: [
@@ -45,9 +46,11 @@ import { SpansService } from './spans/spans.service';
    /*  HealthModule, */
     DevicesModule,
     TraceModule,
-    DaprModule
+    MetricModule,
+    DaprModule,
+
   ],
-  controllers: [AppController, LogsController, SpansController],
+  controllers: [AppController, LogsController, SpansController, MetricsController],
   providers: [AppService, LogsService, SpansService],
 })
 export class AppModule {}

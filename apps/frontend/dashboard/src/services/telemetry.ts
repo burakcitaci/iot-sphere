@@ -1,22 +1,25 @@
 import config from '../config/config';
-import { OtelLog, OtelSpan } from '@iot-sphere/entity-lib';
+import { OtelLog, OtelSpan, OtelMetric } from '@iot-sphere/entity-lib';
 
-type StreamType = 'span' | 'log';
+type StreamType = 'span' | 'log' | 'metric';
 
 class TelemetryService {
   private readonly streamUrls: Record<StreamType, string> = {
     span: config.telemetry.spanStreamUrl,
     log: config.telemetry.logStreamUrl,
+    metric: config.telemetry.metricStreamUrl,
   };
 
   private eventSources: Record<StreamType, EventSource | null> = {
     span: null,
     log: null,
+    metric: null,
   };
 
   private reconnectAttempts: Record<StreamType, number> = {
     span: 0,
     log: 0,
+    metric: 0,
   };
 
   private readonly maxReconnectAttempts = 5;
@@ -82,6 +85,10 @@ class TelemetryService {
     return this.subscribeToStream<OtelLog>('log', onMessage, onError);
   }
 
+  subscribeToMetrics(onMessage: (metric: OtelMetric) => void, onError?: (error: Event) => void): () => void {
+    return this.subscribeToStream<OtelMetric>('metric', onMessage, onError);
+  }
+
   private subscribeToStream<T>(type: StreamType, onMessage: (data: T) => void, onError?: (error: Event) => void): () => void {
     this.closeStream(type);
 
@@ -93,6 +100,13 @@ class TelemetryService {
       try {
         const parsed = JSON.parse(event.data);
         const data = parsed.data ?? parsed;
+        if(type === 'metric')
+        {
+
+          const metric = data as OtelMetric;
+          console.log("Recieved: ", metric)
+        }
+        
         onMessage(data as T);
         this.reconnectAttempts[type] = 0;
       } catch (err) {

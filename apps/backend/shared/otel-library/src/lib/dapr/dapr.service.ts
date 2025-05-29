@@ -7,6 +7,7 @@ export class DaprService{
 
     private logStream$ = new Subject<MessageEvent>();
     private spanStream$ = new Subject<MessageEvent>();
+    private metricStream$ = new Subject<MessageEvent>();
     // This endpoint will be consumed by the React UI
 
     // constructor(@Inject('DAPR_SERVER') private readonly daprServer: DaprServer){}
@@ -33,5 +34,13 @@ export class DaprService{
     // Call this method when a new log is received from Dapr
     pushSpan(log: any) {
       this.spanStream$.next({ data: log });
+    }
+
+    streamMetric(): Observable<MessageEvent>{
+      return this.metricStream$.asObservable();
+    }
+
+    pushMetric(metric:any){
+      this.metricStream$.next({data:metric})
     }
 }
