@@ -20,8 +20,9 @@ export class LogExporter implements LogRecordExporter {
         );
       });
 
-      await Promise.all(publishPromises);
       console.log('All logs published successfully');
+      await Promise.all(publishPromises);
+      
       resultCallback({ code: ExportResultCode.SUCCESS });
 
     } catch (error) {

@@ -5,3 +5,5 @@ export * from './lib/trace/trace';
 export * from './lib/trace/trace.module'
 export * from './lib/dapr/dapr.module'
 export * from './lib/dapr/dapr.service'
+export * from './lib/metric/metric.module'
+export * from './lib/metric/metric.service'

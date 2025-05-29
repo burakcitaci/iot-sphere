@@ -1,10 +1,16 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Inject, Param } from '@nestjs/common';
 import { AppService } from './app.service';
-import { Trace } from '@gateway/otel-library';
+import { MetricService, Trace } from '@gateway/otel-library';
+import type { Counter, Meter } from '@opentelemetry/api';
 
 @Controller()
 export class AppController {
-  constructor( private readonly appService: AppService) {}
+ 
+  constructor( private readonly appService: AppService,
+    private metricsService: MetricService,
+  ) {
+    
+  }
 
   @Get('span/:spanId')
   @Trace({
@@ -13,7 +19,8 @@ export class AppController {
   })
   getSpanById(@Param('spanId') spanId: string) {
     const result = this.appService.getSpanById(spanId);
-   
+    this.metricsService.incrementHttpRequests("GET", "hello", 204);
+
     return result;
   }
 }
