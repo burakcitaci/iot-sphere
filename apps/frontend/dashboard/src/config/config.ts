@@ -11,7 +11,12 @@ interface Config {
     telemetry: boolean;
     analytics: boolean;
   };
+  telemetry: {
+    spanStreamUrl: string;
+    logStreamUrl: string;
+  };
 }
+
 
 const config: Config = {
   api: {
@@ -25,6 +30,10 @@ const config: Config = {
   features: {
     telemetry: import.meta.env.VITE_TELEMETRY_ENABLED === 'true',
     analytics: import.meta.env.VITE_ANALYTICS_ENABLED === 'true',
+  },
+  telemetry: {
+    spanStreamUrl: import.meta.env.VITE_SPAN_STREAM_URL || 'http://localhost:3001/api/spans/stream',
+    logStreamUrl: import.meta.env.VITE_LOG_STREAM_URL || 'http://localhost:3001/api/logs/stream',
   },
 };
 

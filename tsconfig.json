@@ -14,6 +14,9 @@
     },
     {
       "path": "./apps/backend/shared/otel-library"
+    },
+    {
+      "path": "./apps/shared"
     }
   ]
 }

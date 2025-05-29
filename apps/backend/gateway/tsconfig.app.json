@@ -9,9 +9,12 @@
     "target": "es2021",
     "baseUrl": ".",
     "rootDir": "src"
-    
   },
-  "include": ["src/**/*.ts",  "../../shared/otel-library/src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "../../shared/otel-library/src/**/*.ts",
+    "../../../shared/src/**/*.ts"
+  ],
   "exclude": [
     "out-tsc",
     "dist",

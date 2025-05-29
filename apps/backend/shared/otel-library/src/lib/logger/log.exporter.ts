@@ -1,39 +1,29 @@
 import { LogRecordExporter, ReadableLogRecord } from '@opentelemetry/sdk-logs';
 import { ExportResult, ExportResultCode } from '@opentelemetry/core';
 import { DaprClient } from '@dapr/dapr';
-export class LogExporter implements LogRecordExporter {
-  private daprClient: DaprClient;
+import { OtelLog } from '@iot-sphere/entity-lib';
 
-  constructor(daprClient: DaprClient) {
-    this.daprClient = daprClient;
-  }
+export class LogExporter implements LogRecordExporter {
+  constructor(private readonly daprClient: DaprClient) {}
 
   async export(
     logs: ReadableLogRecord[],
     resultCallback: (result: ExportResult) => void
-  ) {
+  ): Promise<void> {
     try {
-      //this.formatLog(logs[0]); // Example of formatting the first log
-      for (const logRecord of logs) {
-        const safeLog = {
-          body: logRecord.body,
-          severityText: logRecord.severityText,
-          hrTime: logRecord.hrTime,
-          serviceName: logRecord.resource.attributes['service.name'],
-          serviceVersion: logRecord.resource.attributes['service.version'],
-          environment: logRecord.resource.attributes['environment'],
-          host: logRecord.resource.attributes['host'],
-        };
-        await this.daprClient.pubsub.publish(
+      const publishPromises = logs.map((logRecord) => {
+        const otelLog = this.toOtelLog(logRecord);
+        return this.daprClient.pubsub.publish(
           'pubsub',
           'my-topic',
-          JSON.stringify(safeLog)
+          JSON.stringify(otelLog)
         );
+      });
 
-        console.log('Logs published successfully', logRecord.resource);
-      }
-
+      await Promise.all(publishPromises);
+      console.log('All logs published successfully');
       resultCallback({ code: ExportResultCode.SUCCESS });
+
     } catch (error) {
       console.error('Failed to export logs:', error);
       resultCallback({
@@ -43,7 +33,22 @@ export class LogExporter implements LogRecordExporter {
     }
   }
 
-  async shutdown(): Promise<void> {
-    // Cleanup if needed
+  shutdown(): Promise<void> {
+    // Perform any cleanup here if needed
+    return Promise.resolve();
+  }
+
+  private toOtelLog(logRecord: ReadableLogRecord): OtelLog {
+    const attrs = logRecord.resource.attributes;
+
+    return {
+      body: logRecord.body,
+      severityText: logRecord.severityText,
+      hrTime: logRecord.hrTime,
+      serviceName: attrs['service.name']?.toString(),
+      serviceVersion: attrs['service.version']?.toString(),
+      environment: attrs['environment']?.toString(),
+      host: attrs['host']?.toString(),
+    };
   }
 }

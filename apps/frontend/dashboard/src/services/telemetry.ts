@@ -1,69 +1,31 @@
+import config from '../config/config';
+import { OtelLog, OtelSpan } from '@iot-sphere/entity-lib';
 
-import { LogRecordExporter, ReadableLogRecord } from '@opentelemetry/sdk-logs';
-import { log } from 'console';
-import { ReadableSpan } from '@opentelemetry/sdk-trace-node';
-import { te } from 'date-fns/locale';
-import config from 'src/config/config';
-export interface SpanData {
-  traceId: string;
-  spanId: string;
-  parentSpanId?: string;
-  name: string;
-  kind: string;
-  startTime: string;
-  endTime: string;
-  duration: number;
-  attributes: Record<string, unknown>;
-  status: { code: number; message?: string };
-  events: Array<{ name: string; attributes: Record<string, unknown>; timestamp: string }>;
-  links: Array<{ traceId: string; spanId: string; attributes: Record<string, unknown> }>;
-}
-
-export interface Trace {
-  id: string;
-  traceId: string;
-  name: string;
-  timestamp: Date;
-  duration: number;
-  status: string;
-  spans: SpanData[];
-  metadata: Record<string, any>;
-  createdAt: Date;
-}
-export interface CustomLogRecord {
-  timestamp: string; // epoch millis
-  severity: string;
-  message: string;
-  resource: Record<string, any>;
-  attributes: Record<string, any>;
-  spanId?: string;
-  traceId?: string;
-  scope?: string;
-  
-}
-export interface SafeLog {
-  body: any;
-  severityText: string;
-  hrTime: [number, number]; // hrTime is a tuple like [seconds, nanoseconds]
-  serviceName?: string;
-  serviceVersion?: string;
-  environment?: string;
-  host: string;
-}
+type StreamType = 'span' | 'log';
 
 class TelemetryService {
-  private readonly baseUrl = config.api.baseUrl;
-  private spanEventSource: EventSource | null = null;
-  private logEventSource: EventSource | null = null;
-  private spanReconnectAttempts = 0;
-  private logReconnectAttempts = 0;
+  private readonly streamUrls: Record<StreamType, string> = {
+    span: config.telemetry.spanStreamUrl,
+    log: config.telemetry.logStreamUrl,
+  };
+
+  private eventSources: Record<StreamType, EventSource | null> = {
+    span: null,
+    log: null,
+  };
+
+  private reconnectAttempts: Record<StreamType, number> = {
+    span: 0,
+    log: 0,
+  };
+
   private readonly maxReconnectAttempts = 5;
 
   formatHrTime(hrTime: [number, number]): string {
     const [seconds, nanos] = hrTime ?? [0, 0];
     const millis = seconds * 1000 + Math.floor(nanos / 1_000_000);
     const date = new Date(millis);
-  
+
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: 'Europe/Berlin',
       month: 'long',
@@ -74,29 +36,12 @@ class TelemetryService {
       second: '2-digit',
       hour12: true,
     });
-  
-    
+
     const parts = formatter.formatToParts(date);
     const get = (type: string) => parts.find(p => p.type === type)?.value || '';
     return `${get('month')} ${get('day')}, ${get('year')} at ${get('hour')}:${get('minute')}:${get('second')} ${get('dayPeriod')?.toLowerCase()}`;
-  
   }
-  mapReadableLogRecordToCustom(log: ReadableLogRecord): CustomLogRecord {
-    const [seconds, nanos] = log.hrTime;
-    const timestamp = new Date(seconds * 1000 + nanos / 1_000_000).toISOString();
-  
-    return {
-      timestamp: this.formatHrTime(log.hrTime),
-      severity: log.severityText ?? 'UNKNOWN',
-      message: this.formatLogBodySafe(log),
-      resource: log.resource?.attributes ?? {},
-      scope: log.instrumentationScope?.name ?? 'unknown',
-      attributes: log.attributes ?? {},
-      traceId: log.spanContext?.traceId,
-      spanId: log.spanContext?.spanId,
-    };
-  }
-  
+
   formatLogBody(body: unknown): string {
     if (typeof body === 'string') return body;
     if (typeof body === 'object') return JSON.stringify(body);
@@ -104,155 +49,95 @@ class TelemetryService {
     return '';
   }
 
-  
- formatLogBodySafe(log: any): string {
+  formatLogBodySafe(log: any): string {
     const body = log.body ?? log._body;
-    
-    if (typeof body === 'string') return body;
-    if (typeof body === 'object') return JSON.stringify(body);
-    if (typeof body === 'number' || typeof body === 'boolean') return String(body);
-    return '';
+    return this.formatLogBody(body);
   }
-  async getSpans(): Promise<ReadableSpan[]> {
+
+  async getSpans(): Promise<OtelSpan[]> {
     try {
-      //const response = await fetchClient.get<SpanData[]>(`${this.baseUrl}/telemetry/spans`);
-      //return response.data || [];
+      // const response = await fetchClient.get<OtelSpan[]>(`${this.baseUrl}/telemetry/spans`);
       return [];
     } catch (error) {
-      console.error('Failed to fetch spans:', error);
+      console.error('❌ Failed to fetch spans:', error);
       return [];
     }
   }
 
-  async getLogs(): Promise<SafeLog[]> {
+  async getLogs(): Promise<OtelLog[]> {
     try {
-      //const response = await fetchClient.get<Log[]>(`${this.baseUrl}/telemetry/logs`);
-      //return response.data || [];
+      // const response = await fetchClient.get<OtelLog[]>(`${this.baseUrl}/telemetry/logs`);
       return [];
     } catch (error) {
-      console.error('Failed to fetch logs:', error);
+      console.error('❌ Failed to fetch logs:', error);
       return [];
     }
   }
 
-  subscribeToSpans(onMessage: (span: ReadableSpan) => void, onError?: (error: Event) => void): () => void {
-    this.closeSpanEventSource();
+  subscribeToSpans(onMessage: (span: OtelSpan) => void, onError?: (error: Event) => void): () => void {
+    return this.subscribeToStream<OtelSpan>('span', onMessage, onError);
+  }
 
-    const url = `http://localhost:3001/api/spans/stream`;
-    this.spanEventSource = new EventSource(url, { withCredentials: false });
+  subscribeToLogs(onMessage: (log: OtelLog) => void, onError?: (error: Event) => void): () => void {
+    return this.subscribeToStream<OtelLog>('log', onMessage, onError);
+  }
 
-    this.spanEventSource.onmessage = (event) => {
+  private subscribeToStream<T>(type: StreamType, onMessage: (data: T) => void, onError?: (error: Event) => void): () => void {
+    this.closeStream(type);
+
+    const url = this.streamUrls[type];
+    const source = new EventSource(url, { withCredentials: false });
+    this.eventSources[type] = source;
+
+    source.onmessage = (event) => {
       try {
-        const parsedEvent = JSON.parse(event.data);
-        const parsedSpan = JSON.parse(event.data) as ReadableSpan;
-        console.log("PARSED SPAN", parsedSpan)
-        onMessage(parsedSpan);
-        this.spanReconnectAttempts = 0;
-      } catch (error) {
-        console.error('Error parsing span data:', error, event.data);
+        const parsed = JSON.parse(event.data);
+        const data = parsed.data ?? parsed;
+        onMessage(data as T);
+        this.reconnectAttempts[type] = 0;
+      } catch (err) {
+        console.error(`❌ Failed to parse ${type} data:`, err, event.data);
       }
     };
 
-    this.spanEventSource.onerror = (error) => {
-      console.error('Span EventSource error:', error, 'ReadyState:', this.spanEventSource?.readyState);
-      if (onError) onError(error);
-      if (this.spanEventSource?.readyState === EventSource.CLOSED) {
-        this.reconnectSpanStream(onMessage, onError);
+    source.onerror = (err) => {
+      console.error(`⚠️ ${type.toUpperCase()} SSE error:`, err, 'ReadyState:', source.readyState);
+      if (onError) onError(err);
+      if (source.readyState === EventSource.CLOSED) {
+        this.reconnectStream(type, onMessage, onError);
       }
     };
 
-    this.spanEventSource.onopen = () => {
-      console.log('Span SSE connection established');
-      this.spanReconnectAttempts = 0;
+    source.onopen = () => {
+      console.log(`✅ ${type.toUpperCase()} SSE connection established`);
+      this.reconnectAttempts[type] = 0;
     };
 
-    return () => {
-      this.closeSpanEventSource();
-    };
+    return () => this.closeStream(type);
   }
 
-  subscribeToLogs(onMessage: (log: SafeLog) => void, onError?: (error: Event) => void): () => void {
-    this.closeLogEventSource();
-
-    const url = `http://localhost:3001/api/logs/stream`;
-    this.logEventSource = new EventSource(url, { withCredentials: false });
-
-    this.logEventSource.onmessage = (event) => {
-      try {
-        const parsedEvent = JSON.parse(event.data);
-        console.log(parsedEvent)
-        const spanData = parsedEvent.data ? parsedEvent.data : parsedEvent;
-        const temp = spanData as SafeLog;
-        console.log(temp)
-        const logData = spanData as SafeLog;
-        console.log(logData.body)
-        onMessage(logData)
-        //onMessage(this.mapReadableLogRecordToCustom(logData));
-        this.logReconnectAttempts = 0;
-      } catch (error) {
-        console.error('Error parsing log data:', error, event.data);
-      }
-    };
-
-    this.logEventSource.onerror = (error) => {
-      console.error('Log EventSource error:', error, 'ReadyState:', this.logEventSource?.readyState);
-      if (onError) onError(error);
-      if (this.logEventSource?.readyState === EventSource.CLOSED) {
-        this.reconnectLogStream(onMessage, onError);
-      }
-    };
-
-    this.logEventSource.onopen = () => {
-      console.log('Log SSE connection established');
-      this.logReconnectAttempts = 0;
-    };
-
-    return () => {
-      this.closeLogEventSource();
-    };
-  }
-
-  private closeSpanEventSource(): void {
-    if (this.spanEventSource) {
-      this.spanEventSource.close();
-      this.spanEventSource = null;
-    }
-  }
-
-  private closeLogEventSource(): void {
-    if (this.logEventSource) {
-      this.logEventSource.close();
-      this.logEventSource = null;
-    }
-  }
-
-  private reconnectSpanStream(onMessage: (span: ReadableSpan) => void, onError?: (error: Event) => void): void {
-    if (this.spanReconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max span reconnection attempts reached');
+  private reconnectStream<T>(type: StreamType, onMessage: (data: T) => void, onError?: (error: Event) => void): void {
+    if (this.reconnectAttempts[type] >= this.maxReconnectAttempts) {
+      console.error(`❌ Max ${type} reconnection attempts reached`);
       return;
     }
-    const delay = Math.min(1000 * Math.pow(2, this.spanReconnectAttempts), 10000);
-    this.spanReconnectAttempts++;
+
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts[type]), 10000);
+    this.reconnectAttempts[type]++;
+
     setTimeout(() => {
-      if (!this.spanEventSource || this.spanEventSource.readyState === EventSource.CLOSED) {
-        this.subscribeToSpans(onMessage, onError);
+      if (!this.eventSources[type] || this.eventSources[type]!.readyState === EventSource.CLOSED) {
+        this.subscribeToStream(type, onMessage, onError);
       }
     }, delay);
   }
 
-  private reconnectLogStream(onMessage: (log: SafeLog) => void, onError?: (error: Event) => void): void {
-    if (this.logReconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max log reconnection attempts reached');
-      return;
+  private closeStream(type: StreamType): void {
+    if (this.eventSources[type]) {
+      this.eventSources[type]!.close();
+      this.eventSources[type] = null;
     }
-    const delay = Math.min(1000 * Math.pow(2, this.logReconnectAttempts), 10000);
-    this.logReconnectAttempts++;
-    setTimeout(() => {
-      if (!this.logEventSource || this.logEventSource.readyState === EventSource.CLOSED) {
-        this.subscribeToLogs(onMessage, onError);
-      }
-    }, delay);
   }
 }
 
-export const telemetryService = new TelemetryService(); 
+export const telemetryService = new TelemetryService();
