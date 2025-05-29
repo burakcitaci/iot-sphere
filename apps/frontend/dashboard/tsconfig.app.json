@@ -44,8 +44,11 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "data.json",
-    "src/app/data.json",
-    "../../shared/otel-library/src/**/*.ts"
+    "src/app/data.json"
   ],
-  "references": []
+  "references": [
+    {
+      "path": "../../shared/tsconfig.lib.json"
+    }
+  ]
 }

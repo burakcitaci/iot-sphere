@@ -54,6 +54,11 @@ const data = {
       title: 'Monitoring',
       url: '/monitoring',
       icon: BugIcon,
+      children: [
+        { title: 'Metrics', url: '/monitoring/metrics' },
+        { title: 'Traces', url: '/monitoring/traces' },
+        { title: 'Logs', url: '/monitoring/logs' },
+      ],
     },
     {
       title: 'Projects',
@@ -64,54 +69,6 @@ const data = {
       title: 'Team',
       url: '/team',
       icon: UsersIcon,
-    },
-  ],
-  navClouds: [
-    {
-      title: 'Capture',
-      icon: CameraIcon,
-      isActive: true,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Proposal',
-      icon: FileTextIcon,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Prompts',
-      icon: FileCodeIcon,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
     },
   ],
   navSecondary: [
@@ -155,7 +112,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} currentPath={location.pathname} />
-        <NavSecondary items={data.navSecondary} currentPath={location.pathname} className="mt-auto" />
+        <NavSecondary
+          items={data.navSecondary}
+          currentPath={location.pathname}
+          className="mt-auto"
+        />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

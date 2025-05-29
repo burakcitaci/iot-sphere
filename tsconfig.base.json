@@ -25,7 +25,7 @@
       "@gateway/otel-library": [
         "apps/backend/shared/otel-library/src/index.ts"
       ],
-      "entity-lib": ["shared/entity-lib/src/index.ts"]
+      "@iot-sphere/entity-lib": ["apps/shared/src/index.ts"]
     }
   }
 }

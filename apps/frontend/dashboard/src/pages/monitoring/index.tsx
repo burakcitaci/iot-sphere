@@ -15,32 +15,6 @@ import { cn } from "@/utils/cn";
 import { DateRange } from "react-day-picker";
 import { TelemetryViewer } from '@/components/telemetry-viewer';
 
-// Mock data for demonstration
-const mockTraces = [
-  {
-    id: 'trace-1',
-    name: 'Device Status Update',
-    timestamp: new Date().toISOString(),
-    duration: '120ms',
-    status: 'success',
-    spans: [
-      { id: 'span-1', name: 'Validate Device', duration: '30ms' },
-      { id: 'span-2', name: 'Update Status', duration: '90ms' },
-    ],
-  },
-  // Add more mock traces as needed
-];
-
-const mockLogs = [
-  {
-    id: 'log-1',
-    timestamp: new Date().toISOString(),
-    level: 'info',
-    message: 'Device status updated successfully',
-    service: 'device-service',
-  },
-  // Add more mock logs as needed
-];
 
 export function MonitoringPage() {
   const [searchQuery, setSearchQuery] = useState('');
