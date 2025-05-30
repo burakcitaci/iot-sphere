@@ -9,7 +9,7 @@ import { DevicesModule } from './devices/devices.module';
 import { Device } from './devices/entities/device.entity';
 import configuration from './config/configuration';
 
-import { OtelLoggerModule, TraceModule,DaprModule, MetricModule } from '@gateway/otel-library'; 
+import { OtelLoggerModule, TraceModule, MetricModule, DaprModule } from '@gateway/otel-library';
 import { TerminusModule } from '@nestjs/terminus';
 import { LogsService } from './logs/logs.service';
 import { LogsController } from './logs/logs.controller';

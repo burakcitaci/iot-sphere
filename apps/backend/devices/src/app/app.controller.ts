@@ -19,49 +19,4 @@ export class AppController {
     this.logger.log('Fetching data from AppService');
     return this.appService.getData();
   }
-
-  @Post('publish')
-  async publish(@Body() body: { topic: string; message: any }) {
-    try {
-      const { topic, message } = body;
-
-      const enhancedMessage = {
-        data: message,
-        metadata: {
-          publishedAt: new Date().toISOString(),
-          publisher: 'devices-api',
-          messageId: `msg-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        },
-      };
-
-      console.log(
-        `[${new Date().toISOString()}] Publishing to topic "${topic}" on pubsub "pubsub":`,
-        JSON.stringify(enhancedMessage)
-      );
-
-      // Ensure the pubsub name matches the subscriber's configuration
-      await this.daprClient.pubsub.publish('pubsub', topic, enhancedMessage);
-
-      console.log(
-        `[${new Date().toISOString()}] Successfully published to "${topic}"`
-      );
-
-      return {
-        status: 'Message published',
-        messageId: enhancedMessage.metadata.messageId,
-        timestamp: enhancedMessage.metadata.publishedAt,
-      };
-    } catch (error) {
-      console.error(
-        `[${new Date().toISOString()}] Failed to publish message:`,
-        error
-      );
-
-      return {
-        status: 'error',
-        message: `Failed to publish: ${error || error}`,
-        code: error || 'UNKNOWN_ERROR',
-      };
-    }
-  }
 }

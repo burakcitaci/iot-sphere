@@ -18,6 +18,7 @@ export const DAPR_SERVER = 'DAPR_SERVER';
           process.exit(0);
         });
         await daprServer.pubsub.subscribe('pubsub', 'my-topic', async (data) => {
+          console.log("Recieved: " , data)
           daprService.pushLog(data);
           return { success: true };
         });

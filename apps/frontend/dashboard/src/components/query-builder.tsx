@@ -3,14 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, X } from 'lucide-react';
+import { Query } from './common/utils';
 
-interface Query {
-  id: number;
-  metric: string;
-  aggregation: string;
-  groupBy: string;
-  filters: any[];
-}
 
 interface QueryBuilderProps {
   queries: Query[];
