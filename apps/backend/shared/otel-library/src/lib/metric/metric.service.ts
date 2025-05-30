@@ -1,5 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Counter, UpDownCounter, Meter, Histogram, MeterProvider } from '@opentelemetry/api';
+import { Counter, UpDownCounter, Meter, Histogram } from '@opentelemetry/api';
+import type { MeterProvider } from '@opentelemetry/api';
 
 
 @Injectable()
@@ -11,7 +12,7 @@ export class MetricService {
 
   private meter: Meter;
 
-  constructor( private meterProvider: MeterProvider) {
+  constructor(@Inject('OTEL_METER_PROVIDER') private meterProvider: MeterProvider) {
     this.meter = this.meterProvider.getMeter('metric-service');
     this.initializeMetrics();
   }
