@@ -7,13 +7,16 @@ import { LogExporter } from './log.exporter';
 import { logs } from '@opentelemetry/api-logs';
 import { DaprClient } from '@dapr/dapr';
 import { DAPR_CLIENT } from '../dapr/dapr.module';
+import { DaprModule } from '../dapr/dapr.module';
 import * as os from 'os';
 @Global()
 @Module({
   imports: [ ConfigModule.forRoot({
     isGlobal: true,
     
-  }),],
+  }),
+  DaprModule,
+  ],
   providers: [CentralLoggerService,
     {
       provide: LoggerProvider,

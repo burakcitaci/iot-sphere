@@ -50,6 +50,7 @@ export class LogExporter implements LogRecordExporter {
       serviceVersion: attrs['service.version']?.toString(),
       environment: attrs['environment']?.toString(),
       host: attrs['host']?.toString(),
+      attributes: attrs
     };
   }
 }

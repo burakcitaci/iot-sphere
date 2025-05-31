@@ -1,11 +1,11 @@
+import { CentralLoggerService } from '@gateway/otel-library';
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('health')
 @ApiTags('Health')
 export class HealthController {
-  private startTime = Date.now();
-
+  constructor(private readonly loggerService: CentralLoggerService){}
   @Get()
   @ApiOperation({ 
     summary: 'Application health check',
@@ -33,7 +33,7 @@ export class HealthController {
     }
   })
   getHealth() {
-    return {
+    const health = {
       status: 'ok',
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
@@ -45,6 +45,8 @@ export class HealthController {
         heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
       },
     };
+    this.loggerService.log("Health status");
+    return health;
   }
 
   @Get('ping')

@@ -18,8 +18,7 @@ export class TraceExporter implements SpanExporter {
       const publishTasks = spans.map((span) => {
         const safeSpan: OtelSpan = this.toOtelSpan(span);
 
-        this.logService.log('Exporting span:', safeSpan.name);
-
+        console.log(span)
         return this.daprClient.pubsub.publish(
           'pubsub2',
           'my-span',
@@ -42,6 +41,7 @@ export class TraceExporter implements SpanExporter {
   }
 
   private toOtelSpan(span: ReadableSpan): OtelSpan {
+    console.log('Span reached toOtelSpan:', span.name);
     return {
       name: span.name,
       startTime: span.startTime,

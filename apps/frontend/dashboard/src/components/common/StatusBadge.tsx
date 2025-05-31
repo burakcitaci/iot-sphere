@@ -1,6 +1,4 @@
 
-import React from 'react';
-
 interface StatusBadgeProps {
   status: string;
 }
@@ -11,7 +9,7 @@ export const StatusBadge = ({ status }: StatusBadgeProps) => {
       case 'Completed':
       case 'Active':
       case 'Online':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-300 text-green-800';
       case 'In Process':
       case 'Running':
         return 'bg-blue-100 text-blue-800';
@@ -27,8 +25,8 @@ export const StatusBadge = ({ status }: StatusBadgeProps) => {
   };
 
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${getStatusStyle(status)}`}>
-      {status}
+    <span className={`inline-flex items-center px-1.5 py-0.5 h-6 w-2 rounded text-xs font-medium ${getStatusStyle(status)}`}>
+      
     </span>
   );
 };
