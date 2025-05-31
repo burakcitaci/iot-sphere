@@ -18,13 +18,11 @@ export const DAPR_SERVER = 'DAPR_SERVER';
           process.exit(0);
         });
         await daprServer.pubsub.subscribe('pubsub', 'my-topic', async (data) => {
-         
           daprService.pushLog(data);
           return { success: true };
         });
       
         await daprServer.pubsub.subscribe('pubsub2', 'my-span', async (data) => {
-          console.log("Recieved: " , data)
           daprService.pushSpan(data)
           return { success: true };
         });

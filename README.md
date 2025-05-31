@@ -1,228 +1,52 @@
 # IoT Sphere
 
-A modern IoT telemetry platform built with NestJS, OpenTelemetry, and DAPR, providing real-time device monitoring and observability.
+## Project Description
 
-## Features
+This project, "IoT Sphere", is a monorepo managed by [Nx](https://nx.dev/). It is designed as a platform likely related to Internet of Things (IoT) applications. The monorepo contains a frontend application and several backend services, along with shared libraries to promote code reusability.
 
-- **Device Management**: Full CRUD operations for IoT devices
-- **Real-time Telemetry**: Server-Sent Events (SSE) for live device data streaming
-- **Distributed Tracing**: End-to-end tracing with OpenTelemetry
-- **Structured Logging**: Centralized logging with correlation IDs
-- **Event-Driven Architecture**: Using DAPR pub/sub for telemetry data
-- **Modern Frontend**: React-based dashboard with real-time updates
-- **API Documentation**: Swagger/OpenAPI documentation
+## Technologies Used
 
-## Architecture
+The project utilizes a variety of modern technologies:
 
-### Backend Services
+*   **Nx**: Monorepo management tool for task running, dependency management, and code generation.
+*   **Yarn**: Package manager.
+*   **React**: JavaScript library for building user interfaces (used in the `dashboard`).
+*   **Vite**: Fast frontend build tool (used for the `dashboard`).
+*   **Tailwind CSS**: Utility-first CSS framework for styling the frontend.
+*   **Dapr (Distributed Application Runtime)**: Provides building blocks for microservice applications, such as publish/subscribe, state management, and service invocation (used in the `otel-library` and likely by backend services).
+*   **OpenTelemetry (OTEL)**: Framework for generating, collecting, and exporting telemetry data (traces, metrics, and logs) to observe the applications' behavior (integrated via the `otel-library`).
+*   **NestJS**: A progressive Node.js framework for building efficient, reliable and scalable server-side applications (likely used for the backend services `devices` and `gateway`).
+*   **TypeScript**: Primary language used across the monorepo.
 
-- **Gateway API** (`/apps/backend/gateway`):
-  - Device management and telemetry ingestion
-  - OpenTelemetry integration for tracing and logging
-  - DAPR pub/sub for event handling
-  - SSE endpoints for real-time data streaming
+## Project Structure
 
-### Frontend Applications
+The monorepo is organized into `apps` and `libs` directories:
 
-- **Dashboard** (`/apps/frontend/dashboard`):
-  - Real-time device telemetry visualization
-  - Device management interface
-  - Trace and log viewing
-
-### Telemetry System
-
-The telemetry system uses a multi-layered approach:
-
-1. **Data Collection**:
-   - Device telemetry ingestion via REST API
-   - Support for both direct HTTP and DAPR cloud events
-   - Automatic timestamp and trace context propagation
-
-2. **Data Processing**:
-   - OpenTelemetry for distributed tracing
-   - Structured logging with correlation
-   - Batch processing for efficient data handling
-
-3. **Data Distribution**:
-   - DAPR pub/sub for event distribution
-   - Server-Sent Events for real-time updates
-   - REST APIs for historical data
+*   `apps/frontend/dashboard`: The React frontend application.
+*   `apps/backend/devices`: A backend service, potentially handling device interactions.
+*   `apps/backend/gateway`: Another backend service, possibly acting as an API gateway.
+*   `libs/entity-lib`: A shared library, likely containing data models or interfaces.
+*   `apps/backend/shared/otel-library`: A shared library integrating Dapr and OpenTelemetry for observability.
 
 ## Getting Started
 
-### Prerequisites
+1.  **Clone the repository.**
+2.  **Install dependencies:**
 
-- Node.js 18 or later
-- Docker and Docker Compose
-- DAPR CLI
+    ```bash
+    yarn install
+    ```
 
-### Installation
+3.  **Explore available tasks:** Use Nx commands to build, test, and serve the applications. For example:
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+    ```bash
+    yarn nx serve dashboard
+    yarn nx build devices
+    yarn nx test gateway
+    ```
 
-2. Initialize DAPR:
-   ```bash
-   dapr init
-   ```
+    Refer to the `project.json` files within each application/library directory for specific targets.
 
-3. Start Redis (required for DAPR pub/sub):
-   ```bash
-   docker-compose up -d redis
-   ```
+## Contribution
 
-### Running the Application
-
-1. Start the backend:
-   ```bash
-   nx serve backend-gateway
-   ```
-
-2. In a new terminal, start the frontend:
-   ```bash
-   nx serve frontend-dashboard
-   ```
-
-3. Start DAPR sidecar for the backend:
-   ```bash
-   dapr run --app-id gateway-api --app-port 3000 --dapr-http-port 3500
-   ```
-
-## API Documentation
-
-The API documentation is available at `/api/docs` when running the backend service. Key endpoints include:
-
-### Device Management
-
-- `POST /api/devices` - Create a new device
-- `GET /api/devices` - List all devices
-- `GET /api/devices/:id` - Get device details
-- `PATCH /api/devices/:id` - Update device
-- `DELETE /api/devices/:id` - Remove device
-
-### Telemetry
-
-- `POST /api/devices/telemetry` - Send device telemetry
-- `GET /api/devices/telemetry/stream` - Stream real-time telemetry
-- `GET /api/telemetry/spans` - Get trace spans
-- `GET /api/telemetry/logs` - Get system logs
-
-## Telemetry Data Format
-
-### Device Telemetry
-
-```typescript
-interface TelemetryDto {
-  deviceId: string;
-  timestamp?: string;
-  type?: string;
-  data: Record<string, any>;
-  version?: number;
-}
-```
-
-### Span Data
-
-```typescript
-interface SpanData {
-  traceId: string;
-  spanId: string;
-  name: string;
-  kind: string;
-  startTime: string;
-  endTime: string;
-  attributes: Record<string, unknown>;
-  status: {
-    code: number;
-    message?: string;
-  };
-}
-```
-
-## Configuration
-
-### Environment Variables
-
-```env
-# API Configuration
-PORT=3000
-API_PREFIX=api
-
-# DAPR Configuration
-DAPR_HTTP_PORT=3500
-PUBSUB_NAME=pubsub
-PUBSUB_TOPIC_TELEMETRY=telemetry
-
-# Telemetry Configuration
-TELEMETRY_ENABLED=true
-TELEMETRY_SERVICE_NAME=gateway-api
-TELEMETRY_SERVICE_VERSION=1.0.0
-```
-
-### DAPR Components
-
-The application uses the following DAPR components:
-
-1. **Redis PubSub** (`/apps/backend/gateway/dapr/components/pubsub.yaml`):
-   - Used for telemetry event distribution
-   - Configurable host and connection settings
-
-2. **Redis State** (optional):
-   - Can be used for device state management
-   - Configurable persistence settings
-
-## Development
-
-### Project Structure
-
-```
-.
-├── apps
-│   ├── backend
-│   │   └── gateway
-│   │       ├── src
-│   │       │   ├── app
-│   │       │   │   ├── devices
-│   │       │   │   └── telemetry
-│   │       │   └── common
-│   │       │       └── open-telemetry
-│   │       └── dapr
-│   │           └── components
-│   └── frontend
-│       └── dashboard
-└── libs
-    └── shared
-```
-
-### Adding New Features
-
-1. Create new NestJS modules in the appropriate directory
-2. Add OpenTelemetry decorators for tracing
-3. Update API documentation using Swagger decorators
-4. Add corresponding frontend components
-
-### Testing
-
-```bash
-# Unit tests
-nx test backend-gateway
-nx test frontend-dashboard
-
-# E2E tests
-nx e2e backend-gateway-e2e
-nx e2e frontend-dashboard-e2e
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+[Add contribution guidelines here]
