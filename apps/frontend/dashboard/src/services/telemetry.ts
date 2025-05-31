@@ -77,6 +77,16 @@ class TelemetryService {
     }
   }
 
+  async getMetrics(): Promise<OtelMetric[]> {
+    try {
+      // const response = await fetchClient.get<OtelMetric[]>(`${this.baseUrl}/telemetry/metrics`);
+      return [];
+    } catch (error) {
+      console.error('❌ Failed to fetch metrics:', error);
+      return [];
+    }
+  }
+
   subscribeToSpans(onMessage: (span: OtelSpan) => void, onError?: (error: Event) => void): () => void {
     return this.subscribeToStream<OtelSpan>('span', onMessage, onError);
   }
@@ -100,6 +110,7 @@ class TelemetryService {
       try {
         const parsed = JSON.parse(event.data);
         const data = parsed.data ?? parsed;
+        console.log("Recieved: ", parsed)
         if(type === 'metric')
         {
 

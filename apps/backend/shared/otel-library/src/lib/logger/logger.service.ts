@@ -18,7 +18,7 @@ export class CentralLoggerService implements LoggerService {
 
   log(message: any, ...optionalParams: any[]) {
     this.otelLogger.emit({
-      body: this.formatMessage(message, optionalParams),
+      body: message,
       severityNumber: 9, // INFO
       severityText: 'INFO',
       attributes: this.getAttributes(optionalParams),

@@ -16,6 +16,7 @@ import { SearchInput } from '@/components/common/SearchInput';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
+import { useLogs } from '@/hooks/useLogs';
 
 // Mock data and interfaces
 interface LogEntry {
@@ -268,12 +269,8 @@ export function LogExplorer() {
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  // Mock hooks - replace with actual implementation
-  const { spans, logs, isLoading, error, refreshData } =
-    useTelemetry(autoRefresh);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'error' | 'success'>(
-    'all'
-  );
+  const { logs, isLoading, error, refreshData } = useLogs(autoRefresh);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'error' | 'success'>('all');
   useEffect(() => setCurrentPage(1), [searchQuery, statusFilter]);
 
   const handleRefresh = useCallback(() => refreshData(), [refreshData]);
@@ -479,9 +476,6 @@ export function LogExplorer() {
                       </TableHead>
                       <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
                         Message
-                      </TableHead>
-                      <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                        Attributes
                       </TableHead>
                     </TableRow>
                   </TableHeader>

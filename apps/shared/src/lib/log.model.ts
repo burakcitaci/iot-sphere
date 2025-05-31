@@ -6,4 +6,5 @@ export interface OtelLog {
     serviceVersion?: string;
     environment?: string;
     host?: string;
+    attributes?: any
   }

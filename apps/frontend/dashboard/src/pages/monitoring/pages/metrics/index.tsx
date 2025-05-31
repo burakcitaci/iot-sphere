@@ -8,8 +8,7 @@ import { StatCard } from '@/components/common/StatCard';
 import { QueryBuilder } from '@/components/common/QueryBuilder';
 import { Query } from '@/components/common/utils';
 import { HttpMetricsChart } from '@/components/common/HttpChart';
-
-
+import { useMetrics } from '@/hooks/useMetrics';
 
 export type MetricType = 'counter' | 'histogram' | 'gauge';
 
@@ -26,6 +25,8 @@ export function MetricExplorer() {
       filters: []
     }
   ]);
+
+  const { metrics: telemetryMetrics, isLoading, error, refreshData } = useMetrics(autoRefresh);
 
   // Enhanced metrics list including HTTP metrics
   const metrics = [
@@ -73,7 +74,7 @@ export function MetricExplorer() {
   };
 
   const handleRefresh = (): void => {
-    console.log('Refreshing metrics...');
+    refreshData();
   };
 
   const filteredMetrics: string[] = metrics.filter(metric =>

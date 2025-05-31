@@ -16,6 +16,7 @@ import { LogsController } from './logs/logs.controller';
 import { SpansController } from './spans/spans.controller';
 import { SpansService } from './spans/spans.service';
 import { MetricsController } from './metrics/metrics.controller';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -50,7 +51,7 @@ import { MetricsController } from './metrics/metrics.controller';
     DaprModule,
 
   ],
-  controllers: [AppController, LogsController, SpansController, MetricsController],
+  controllers: [AppController, LogsController, HealthController, SpansController, MetricsController],
   providers: [AppService, LogsService, SpansService],
 })
 export class AppModule {}

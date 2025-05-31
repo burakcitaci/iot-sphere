@@ -1,22 +1,51 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Controller, Get, HttpStatus } from '@nestjs/common';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse,
+  ApiOkResponse,
+  ApiProperty
+} from '@nestjs/swagger';
 import { AppService } from './app.service';
-import { DaprClient } from '@dapr/dapr';
-import { CentralLoggerService } from '@gateway/otel-library';
+import { CentralLoggerService, Trace } from '@gateway/otel-library';
+
+// Optional: Create a response DTO for better documentation
+export class AppDataResponseDto {
+  @ApiProperty({ example: 'Hello API', description: 'Welcome message' })
+  message!: string;
+
+  @ApiProperty({ example: '1.0.0', description: 'API version' })
+  version?: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Current timestamp' })
+  timestamp!: string;
+}
 
 @Controller()
+@ApiTags('App') // Groups endpoints in Scalar/Swagger UI
 export class AppController {
-  private readonly daprClient: DaprClient;
-  constructor(private readonly appService: AppService, private readonly logger: CentralLoggerService) {
-    this.daprClient = new DaprClient({
-      daprHost: 'localhost',
-      daprPort: '3500',
-    }); // Dapr sidecar address
+  constructor(
+    private readonly appService: AppService, 
+    private readonly logger: CentralLoggerService
+  ) {
     this.logger.setContext('AppController');
   }
 
   @Get()
+  
+  @Trace({
+    spanName: 'getData',
+    captureArgs: true,
+  })
   getData() {
     this.logger.log('Fetching data from AppService');
-    return this.appService.getData();
+    
+    try {
+      const result = this.appService.getData();
+      return result;
+    } catch (error) {
+      this.logger.error('Error fetching data', error);
+      throw error;
+    }
   }
 }
