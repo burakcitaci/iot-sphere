@@ -1,55 +1,24 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { telemetryService } from '@/services/telemetry';
-import { OtelSpan } from '@iot-sphere/entity-lib';
+import { useEffect } from 'react';
+import { useTelemetryStore } from '@/store/telemetryStore';
 
 export function useSpans(autoRefreshEnabled = true) {
-  const [spans, setSpans] = useState<OtelSpan[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const unsubscribeSpansRef = useRef<() => void | null>(null);
-  const maxSpans = 100;
+  const spans = useTelemetryStore(state => state.spans);
+  const isLoading = useTelemetryStore(state => state.isLoading.spans);
+  const error = useTelemetryStore(state => state.error.spans);
+  const fetchSpans = useTelemetryStore(state => state.fetchSpans);
+  const setAutoRefresh = useTelemetryStore(state => state.setAutoRefresh);
 
-  const fetchSpans = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const spansData = await telemetryService.getSpans();
-      setSpans(spansData);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load spans data'));
-      console.error('❌ Spans fetch error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const handleSpanData = useCallback((span: OtelSpan) => {
-    setSpans(prev => [span, ...prev].slice(0, maxSpans));
-  }, []);
-
-  const handleStreamError = useCallback((event: Event) => {
-    console.error('⚠️ Spans SSE error:', event);
-    setError(new Error('Lost connection to spans stream'));
-  }, []);
-
+  // Fetch on mount
   useEffect(() => {
     fetchSpans();
   }, [fetchSpans]);
 
+  // Manage auto-refresh subscription
   useEffect(() => {
-    if (!autoRefreshEnabled) {
-      unsubscribeSpansRef.current?.();
-      unsubscribeSpansRef.current = null;
-      return;
-    }
-
-    unsubscribeSpansRef.current = telemetryService.subscribeToSpans(handleSpanData, handleStreamError);
-
-    return () => {
-      unsubscribeSpansRef.current?.();
-      unsubscribeSpansRef.current = null;
-    };
-  }, [autoRefreshEnabled, handleSpanData, handleStreamError]);
+    setAutoRefresh('spans', autoRefreshEnabled);
+    return () => setAutoRefresh('spans', false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefreshEnabled]);
 
   return {
     spans,

@@ -162,39 +162,17 @@ export const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
 ];
 
-function DraggableRow<T extends { id: string | number }>({ row }: Readonly<{ row: Row<T> }>) {
-  const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
-  });
-
-  return (
-    <TableRow
-      data-state={row.getIsSelected() && 'selected'}
-      data-dragging={isDragging}
-      ref={setNodeRef}
-      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition: transition,
-      }}
-    >
-      {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>
-          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-        </TableCell>
-      ))}
-    </TableRow>
-  );
-}
 
 interface DataTableProps<T extends { id: string | number }> {
   data: T[];
   columns: ColumnDef<T>[];
+  onRowClick?: (id: string) => void;
 }
 
 export function DataTable<T extends { id: string | number }>({
   data: initialData,
   columns,
+  onRowClick,
 }: Readonly<DataTableProps<T>>) {
   const [data, setData] = React.useState(() => initialData);
   const [rowSelection, setRowSelection] = React.useState({});
@@ -255,14 +233,35 @@ export function DataTable<T extends { id: string | number }>({
       });
     }
   }
+  const handleRowClick = (row: any, event: React.MouseEvent) => {
+    console.log('DataTable row clicked:', row);
+    console.log('Row original data:', row.original);
+    console.log('onRowClick function exists:', !!onRowClick);
+    
+    // Prevent event bubbling
+    event.stopPropagation();
+    
+    if (onRowClick && row.original && typeof row.original === 'object' && 'id' in row.original) {
+      const systemId = (row.original as any).id;
+      console.log('Extracted system ID:', systemId);
+      onRowClick(systemId);
+    } else {
+      console.log('Row click conditions not met:', {
+        hasOnRowClick: !!onRowClick,
+        hasOriginal: !!row.original,
+        isObject: typeof row.original === 'object',
+        hasId: row.original && typeof row.original === 'object' && 'id' in row.original
+      });
+    }
+  };
 
   return (
     <Tabs
       defaultValue="outline"
-      className="flex w-full flex-col justify-start gap-6"
+      className="flex w-full gap-0 flex-col justify-start"
     >
       <div className="flex items-center justify-end px-4 lg:px-6">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -300,9 +299,9 @@ export function DataTable<T extends { id: string | number }>({
       </div>
       <TabsContent
         value="outline"
-        className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
+        className="relative flex flex-col overflow-auto"
       >
-        <div className="overflow-hidden rounded-lg border">
+        <div className="overflow-hidden rounded-sm border">
           <DndContext
             collisionDetection={closestCenter}
             modifiers={[restrictToVerticalAxis]}
@@ -311,7 +310,7 @@ export function DataTable<T extends { id: string | number }>({
             id={sortableId}
           >
             <Table>
-              <TableHeader className="sticky top-0 z-10 bg-muted">
+              <TableHeader className="sticky top-0 z-10 bg-gray-50">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
@@ -336,7 +335,26 @@ export function DataTable<T extends { id: string | number }>({
                     strategy={verticalListSortingStrategy}
                   >
                     {table.getRowModel().rows.map((row) => (
-                      <DraggableRow key={row.id} row={row} />
+                     <TableRow
+                     key={row.id}
+                     data-state={row.getIsSelected() && 'selected'}
+                     className={`border-b border-gray-100 dark:border-gray-800 transition-colors select-none ${
+                       onRowClick 
+                         ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer' 
+                         : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                     }`}
+                     onClick={(event) => handleRowClick(row, event)}
+                     style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                   >
+                     {row.getVisibleCells().map((cell) => (
+                       <TableCell 
+                         key={cell.id}
+                         className="py-2 align-middle"
+                       >
+                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                       </TableCell>
+                     ))}
+                   </TableRow>
                     ))}
                   </SortableContext>
                 ) : (

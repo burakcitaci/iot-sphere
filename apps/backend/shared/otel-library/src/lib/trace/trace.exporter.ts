@@ -26,10 +26,10 @@ export class TraceExporter implements SpanExporter {
 
       await Promise.all(publishTasks);
 
-      console.log('✅ All spans published successfully');
+      this.logService.debug('✅ All spans published successfully');
       resultCallback({ code: ExportResultCode.SUCCESS });
     } catch (error) {
-      console.error('❌ Failed to publish spans:', error);
+      this.logService.error('❌ Failed to publish spans:', error);
       resultCallback({ code: ExportResultCode.FAILED });
     }
   }
@@ -39,14 +39,15 @@ export class TraceExporter implements SpanExporter {
   }
 
   private toOtelSpan(span: ReadableSpan): OtelSpan {
-    console.log('Span reached toOtelSpan:', span.name);
     return {
       name: span.name,
       startTime: span.startTime,
       endTime: span.endTime,
       status: span.status,
       attributes: span.attributes,
-      spanContext: span.spanContext()
+      spanContext: span.spanContext(),
+      serviceName: span.resource.attributes['service.name'] as string,
+      serviceVersion: span.resource.attributes['service.version'] as string,
     };
   }
 }

@@ -40,16 +40,16 @@ const data = {
       url: '/',
       icon: LayoutDashboardIcon,
     },
-    {
+   /*  {
       title: 'Devices',
       url: '/devices',
       icon: BoxesIcon,
-    },
-    {
-      title: 'Analytics',
-      url: '/analytics',
-      icon: BarChartIcon,
-    },
+    }, */
+    // {
+    //   title: 'Analytics',
+    //   url: '/analytics',
+    //   icon: BarChartIcon,
+    // },
     {
       title: 'Monitoring',
       url: '/monitoring',
@@ -95,22 +95,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="p-1.5 gap-1">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:!p-1 text-xs"
             >
               <Link to="/">
-                <BoxesIcon className="h-5 w-5" />
-                <span className="text-base font-semibold">IOT Sphere</span>
+                <BoxesIcon className="h-4 w-4" />
+                <span className="text-sm font-semibold">IOT Sphere</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="gap-1 p-1">
         <NavMain items={data.navMain} currentPath={location.pathname} />
         <NavSecondary
           items={data.navSecondary}
@@ -118,7 +118,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           className="mt-auto"
         />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="p-1.5 gap-1">
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>

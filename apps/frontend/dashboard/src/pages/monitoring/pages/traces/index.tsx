@@ -127,7 +127,7 @@ export function TraceExplorer() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-gray-700">Services</span>
                 {/* Up arrow placeholder */}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true" className="h-4 w-4 text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true" className="h-4 w-4 text-gray-400"><path stroke-linecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7"></path></svg>
               </div>
               {/* Search input placeholder */}
               <div className="relative mb-2">
@@ -149,7 +149,7 @@ export function TraceExplorer() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-gray-700">Duration</span>
                 {/* Up arrow placeholder */}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true" className="h-4 w-4 text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true" className="h-4 w-4 text-gray-400"><path stroke-linecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7"></path></svg>
               </div>
               <div className="space-y-1 text-xs text-gray-700">
                 <div>
@@ -178,7 +178,7 @@ export function TraceExplorer() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-gray-700">Status</span>
                 {/* Up arrow placeholder */}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true" className="h-4 w-4 text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true" className="h-4 w-4 text-gray-400"><path stroke-linecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7"></path></svg>
               </div>
               <div className="space-y-1 text-xs text-gray-700">
                 <div>
@@ -228,9 +228,6 @@ export function TraceExplorer() {
                       Service
                     </TableHead>
                     <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                      Name
-                    </TableHead>
-                    <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
                       Resource
                     </TableHead>
                     <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
@@ -254,11 +251,8 @@ export function TraceExplorer() {
                       </TableCell>
                       <TableCell className="px-3 py-2 whitespace-nowrap text-xs">
                         <span className="text-sm text-gray-800">
-                          {span.attributes['service.name'] as string}
+                          {span.serviceName}
                         </span>
-                      </TableCell>
-                      <TableCell className="px-3 py-2 text-xs text-gray-900">
-                        {span.name}
                       </TableCell>
                       <TableCell className="px-3 py-2 text-xs text-gray-900">
                         <div className="flex flex-col">

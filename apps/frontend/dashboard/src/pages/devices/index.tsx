@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Wifi, WifiOff, RefreshCw, Zap, Home, Battery, Thermometer } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, Zap, Home, Battery, Thermometer, Plus } from 'lucide-react';
 import { 
   BarChart, 
   Bar, 
@@ -12,11 +12,15 @@ import {
   Pie,
   Cell
 } from 'recharts';
+
+import { Button } from '@/components/ui/button';
 import { FilterSection } from '@/components/common/FilterSection';
 import { PageHeader } from '@/components/common/PageHeader';
 import { SearchInput } from '@/components/common/SearchInput';
 import { StatusBadge } from '@/components/common/StatusBadge';
-
+import { CreateHemsSystemForm } from '@/components/CreateHemSystemForm';
+import { DeviceDataTable } from '@/components/DeviceDataTable';
+import { HemsSystemDataTable } from '@/components/HemsSystemDataTable';
 
 // Interfaces
 interface SubDevice {
@@ -41,10 +45,6 @@ interface HemsSystem {
   subDevices: SubDevice[];
 }
 
-interface Customer {
-  name: string;
-  systemCount: number;
-}
 
 // Mock data
 const mockHemsSystems: HemsSystem[] = [
@@ -189,41 +189,189 @@ const mockHemsSystems: HemsSystem[] = [
         powerConsumption: 500,
         lastSeen: "30 minutes ago",
         attributes: { charge: "45%", capacity: "50kWh" }
+      },
+      {
+        id: "heatpump-003",
+        name: "Commercial HVAC System",
+        type: "heat_pump",
+        status: "online",
+        powerConsumption: 3500,
+        lastSeen: "45 minutes ago",
+        attributes: { targetTemp: "20°C", mode: "cooling" }
+      },
+      {
+        id: "charger-003",
+        name: "Fleet Charging Hub",
+        type: "ev_charger",
+        status: "online",
+        powerConsumption: 2200,
+        lastSeen: "15 minutes ago",
+        attributes: { maxPower: "50kW", connectorType: "CCS" }
+      },
+      {
+        id: "meter-003",
+        name: "Main Grid Meter",
+        type: "smart_meter",
+        status: "online",
+        powerConsumption: 8500,
+        lastSeen: "45 minutes ago",
+        attributes: { totalConsumption: "1250kWh", tariff: "commercial" }
+      },
+      {
+        id: "inverter-003",
+        name: "Central Inverter System",
+        type: "inverter",
+        status: "error",
+        powerConsumption: 0,
+        lastSeen: "1 hour ago",
+        attributes: { efficiency: "0%", temperature: "N/A" }
+      },
+      {
+        id: "lighting-003",
+        name: "Smart LED System",
+        type: "smart_meter",
+        status: "online",
+        powerConsumption: 800,
+        lastSeen: "20 minutes ago",
+        attributes: { brightness: "75%", schedule: "auto" }
+      },
+      {
+        id: "server-003",
+        name: "Data Center UPS",
+        type: "battery",
+        status: "online",
+        powerConsumption: 1500,
+        lastSeen: "10 minutes ago",
+        attributes: { batteryLevel: "98%", loadPercentage: "65%" }
+      }
+    ]
+  },
+  {
+    id: "hems-004",
+    customerName: "Müller Villa",
+    systemName: "Luxury Home Energy",
+    location: "321 Riverside Drive, Frankfurt",
+    status: "online",
+    totalPower: 6200,
+    deviceCount: 7,
+    lastUpdate: "3 minutes ago",
+    subDevices: [
+      {
+        id: "solar-004",
+        name: "Premium Solar Installation",
+        type: "solar_panel",
+        status: "online",
+        powerConsumption: -3200,
+        lastSeen: "2 minutes ago",
+        attributes: { efficiency: "96%", temperature: "41°C" }
+      },
+      {
+        id: "battery-004",
+        name: "Tesla Powerwall 2x",
+        type: "battery",
+        status: "online",
+        powerConsumption: 300,
+        lastSeen: "2 minutes ago",
+        attributes: { charge: "78%", capacity: "27kWh" }
+      },
+      {
+        id: "heatpump-004",
+        name: "Geothermal Heat Pump",
+        type: "heat_pump",
+        status: "online",
+        powerConsumption: 950,
+        lastSeen: "3 minutes ago",
+        attributes: { targetTemp: "23°C", mode: "heating" }
+      },
+      {
+        id: "charger-004",
+        name: "Dual EV Charger",
+        type: "ev_charger",
+        status: "online",
+        powerConsumption: 7400,
+        lastSeen: "1 minute ago",
+        attributes: { maxPower: "22kW", connectorType: "Type 2" }
+      },
+      {
+        id: "pool-004",
+        name: "Smart Pool System",
+        type: "smart_meter",
+        status: "online",
+        powerConsumption: 1200,
+        lastSeen: "5 minutes ago",
+        attributes: { temperature: "26°C", pumpSpeed: "medium" }
+      },
+      {
+        id: "meter-004",
+        name: "Bi-directional Meter",
+        type: "smart_meter",
+        status: "online",
+        powerConsumption: 6200,
+        lastSeen: "1 minute ago",
+        attributes: { totalConsumption: "680kWh", tariff: "time-of-use" }
+      },
+      {
+        id: "inverter-004",
+        name: "Hybrid Inverter System",
+        type: "inverter",
+        status: "online",
+        powerConsumption: -3100,
+        lastSeen: "2 minutes ago",
+        attributes: { efficiency: "98.2%", temperature: "48°C" }
+      }
+    ]
+  },
+  {
+    id: "hems-005",
+    customerName: "Weber Apartment",
+    systemName: "Compact Smart Home",
+    location: "88 Urban Street, Stuttgart",
+    status: "online",
+    totalPower: 1800,
+    deviceCount: 4,
+    lastUpdate: "1 minute ago",
+    subDevices: [
+      {
+        id: "solar-005",
+        name: "Balcony Solar Kit",
+        type: "solar_panel",
+        status: "online",
+        powerConsumption: -600,
+        lastSeen: "1 minute ago",
+        attributes: { efficiency: "89%", temperature: "38°C" }
+      },
+      {
+        id: "battery-005",
+        name: "Compact Home Battery",
+        type: "battery",
+        status: "online",
+        powerConsumption: 80,
+        lastSeen: "1 minute ago",
+        attributes: { charge: "67%", capacity: "5kWh" }
+      },
+      {
+        id: "heatpump-005",
+        name: "Mini Split Heat Pump",
+        type: "heat_pump",
+        status: "online",
+        powerConsumption: 750,
+        lastSeen: "2 minutes ago",
+        attributes: { targetTemp: "21°C", mode: "auto" }
+      },
+      {
+        id: "meter-005",
+        name: "Apartment Smart Meter",
+        type: "smart_meter",
+        status: "online",
+        powerConsumption: 1800,
+        lastSeen: "30 seconds ago",
+        attributes: { totalConsumption: "180kWh", tariff: "standard" }
       }
     ]
   }
 ];
 
-const mockCustomers: Customer[] = [
-  { name: 'Johnson Family', systemCount: 1 },
-  { name: 'Schmidt Residence', systemCount: 1 },
-  { name: 'Green Tech Office', systemCount: 1 },
-  { name: 'Miller Household', systemCount: 2 },
-  { name: 'Weber Industries', systemCount: 3 }
-];
 
-// Device status distribution for pie chart
-const deviceStatusData = [
-  { name: 'Online', value: 12, color: '#10b981' },
-  { name: 'Offline', value: 2, color: '#6b7280' },
-  { name: 'Warning', value: 3, color: '#f59e0b' },
-  { name: 'Error', value: 1, color: '#ef4444' }
-];
-
-// Power consumption over time
-const powerHistogramData = [
-  { time: '15:29', consumption: 4200, generation: -2800 },
-  { time: '15:30', consumption: 4500, generation: -3200 },
-  { time: '15:31', consumption: 4100, generation: -3100 },
-  { time: '15:32', consumption: 3800, generation: -2900 },
-  { time: '15:33', consumption: 4300, generation: -3400 },
-  { time: '15:34', consumption: 4700, generation: -3600 },
-  { time: '15:35', consumption: 4400, generation: -3300 },
-  { time: '15:36', consumption: 4200, generation: -3100 },
-  { time: '15:37', consumption: 4000, generation: -2800 },
-  { time: '15:38', consumption: 4600, generation: -3500 },
-  { time: '15:39', consumption: 4300, generation: -3200 }
-];
 
 const DeviceTypeIcon: React.FC<{ type: string; className?: string }> = ({ type, className = "h-4 w-4" }) => {
   switch (type) {
@@ -241,67 +389,6 @@ const DeviceTypeIcon: React.FC<{ type: string; className?: string }> = ({ type, 
   }
 };
 
-const PowerChart = () => (
-  <div className="h-32">
-    <div className="flex items-center justify-between mb-2">
-      <h4 className="text-sm font-medium text-gray-700">Power Flow Over Time</h4>
-      <div className="flex items-center gap-4 text-xs text-gray-500">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-blue-400 rounded-sm"></div>
-          <span>Consumption</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-400 rounded-sm"></div>
-          <span>Generation</span>
-        </div>
-        <span>Net: +1.2kW</span>
-      </div>
-    </div>
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={powerHistogramData} margin={{ top: 5, right: 5, left: 5, bottom: 20 }}>
-        <CartesianGrid strokeDasharray="1 1" stroke="#f0f4f8" vertical={false} />
-        <XAxis 
-          dataKey="time" 
-          axisLine={false}
-          tickLine={false}
-          tick={{ fontSize: 9, fill: '#64748b' }}
-          interval={2}
-        />
-        <YAxis 
-          axisLine={false}
-          tickLine={false}
-          tick={{ fontSize: 9, fill: '#64748b' }}
-          width={35}
-          tickFormatter={(value) => `${Math.abs(value/1000)}k`}
-        />
-        <Tooltip 
-          contentStyle={{ 
-            backgroundColor: 'white', 
-            border: '1px solid #e2e8f0', 
-            borderRadius: '8px',
-            fontSize: '12px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-          }}
-          formatter={(value: number, name: string) => [
-            `${Math.abs(value)}W`,
-            name === 'consumption' ? 'Consumption' : 'Generation'
-          ]}
-        />
-        <Bar 
-          dataKey="consumption" 
-          fill="#60a5fa" 
-          radius={[1, 1, 0, 0]}
-        />
-        <Bar 
-          dataKey="generation" 
-          fill="#34d399" 
-          radius={[1, 1, 0, 0]}
-        />
-      </BarChart>
-    </ResponsiveContainer>
-  </div>
-);
-
 export function DeviceExplorer() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [customerSearch, setCustomerSearch] = useState<string>('');
@@ -310,14 +397,20 @@ export function DeviceExplorer() {
   const [selectedDeviceTypes, setSelectedDeviceTypes] = useState<Set<string>>(new Set());
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState<boolean>(false);
+  const [hemsSystems, setHemsSystems] = useState<HemsSystem[]>(mockHemsSystems);
 
   const handleRefresh = useCallback(() => {
     setIsLoading(true);
     setTimeout(() => setIsLoading(false), 1000);
   }, []);
 
+  const handleCreateSystem = useCallback((newSystem: HemsSystem) => {
+    setHemsSystems(prev => [...prev, newSystem]);
+  }, []);
+
   const filteredSystems = useMemo(() => {
-    return mockHemsSystems.filter(system => {
+    return hemsSystems.filter(system => {
       const matchesSearch = !searchQuery || 
         system.systemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         system.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -333,9 +426,18 @@ export function DeviceExplorer() {
       
       return matchesSearch && matchesCustomer && matchesStatus;
     });
-  }, [searchQuery, selectedCustomers, selectedStatuses, selectedDeviceTypes]);
+  }, [searchQuery, selectedCustomers, selectedStatuses, selectedDeviceTypes, hemsSystems]);
 
-  const filteredCustomers = mockCustomers.filter(customer =>
+  // Update customers list to include new ones
+  const allCustomers = useMemo(() => {
+    const customerMap = new Map<string, number>();
+    hemsSystems.forEach(system => {
+      customerMap.set(system.customerName, (customerMap.get(system.customerName) || 0) + 1);
+    });
+    return Array.from(customerMap.entries()).map(([name, systemCount]) => ({ name, systemCount }));
+  }, [hemsSystems]);
+
+  const filteredCustomers = allCustomers.filter(customer =>
     customer.name.toLowerCase().includes(customerSearch.toLowerCase())
   );
 
@@ -382,33 +484,46 @@ export function DeviceExplorer() {
     <div className="px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <PageHeader
-          title="Device Explorer"
-          description="Monitor and manage HEMS devices and systems"
-          autoRefresh={autoRefresh}
-          onAutoRefreshChange={setAutoRefresh}
-          onRefresh={handleRefresh}
-          isLoading={isLoading}
-        />
-
+        <div>
+          <PageHeader
+            title="Device Explorer"
+            description="Monitor and manage HEMS devices and systems"
+            autoRefresh={autoRefresh}
+            onAutoRefreshChange={setAutoRefresh}
+            onRefresh={handleRefresh}
+            isLoading={isLoading}
+          />
+         
+        </div>
+        
         {/* Stats Bar */}
-        <div className="flex gap-3 mb-3">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex gap-3">
           <div className="bg-white rounded border border-gray-200 px-3 py-2">
-            <div className="text-xs text-gray-500 mb-1">Total Systems</div>
+            <div className="text-md text-gray-500 mb-1">Total Systems</div>
             <div className="text-sm font-medium text-gray-800">{stats.totalSystems}</div>
           </div>
           <div className="bg-white rounded border border-gray-200 px-3 py-2">
-            <div className="text-xs text-gray-500 mb-1">Online Systems</div>
+            <div className="text-md text-gray-500 mb-1">Online Systems</div>
             <div className="text-sm font-medium text-green-500">{stats.onlineSystems}</div>
           </div>
           <div className="bg-white rounded border border-gray-200 px-3 py-2">
-            <div className="text-xs text-gray-500 mb-1">Total Devices</div>
+            <div className="text-md text-gray-500 mb-1">Total Devices</div>
             <div className="text-sm font-medium text-gray-800">{stats.totalDevices}</div>
           </div>
           <div className="bg-white rounded border border-gray-200 px-3 py-2">
-            <div className="text-xs text-gray-500 mb-1">Total Power</div>
+            <div className="text-md text-gray-500 mb-1">Total Power</div>
             <div className="text-sm font-medium text-blue-500">{(stats.totalPower/1000).toFixed(1)}kW</div>
           </div>
+          </div>
+          
+          <Button
+            onClick={() => setIsCreateFormOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create HEMS System
+          </Button>
         </div>
 
         {/* Top Search and Controls */}
@@ -426,36 +541,6 @@ export function DeviceExplorer() {
           {/* Left Sidebar - Filters */}
           <div className="w-60 bg-white rounded border border-gray-200 p-3 shadow-sm h-fit">
             <h3 className="text-sm font-semibold mb-3 text-gray-900">Filters</h3>
-            
-            <FilterSection title="Customers">
-              <SearchInput
-                placeholder="Search customers..."
-                value={customerSearch}
-                onChange={setCustomerSearch}
-                className="mb-2"
-              />
-              <div className="space-y-0.5 max-h-48 overflow-y-auto">
-                {filteredCustomers.map(customer => (
-                  <label key={customer.name} className="flex items-center justify-between py-1 px-2 rounded hover:bg-gray-50 cursor-pointer transition-colors">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedCustomers.has(customer.name)}
-                        onChange={() => toggleCustomer(customer.name)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3 h-3 flex-shrink-0"
-                      />
-                      <span className="text-xs text-gray-700 truncate" title={customer.name}>
-                        {customer.name}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex-shrink-0 ml-2">
-                      {customer.systemCount}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </FilterSection>
-
             <FilterSection title="System Status">
               <div className="space-y-1.5">
                 {['online', 'offline', 'warning', 'error'].map(status => (
@@ -466,7 +551,7 @@ export function DeviceExplorer() {
                       onChange={() => toggleStatus(status)}
                       className="rounded border-gray-300 w-3 h-3" 
                     />
-                    <span className="text-xs text-gray-700 capitalize">{status}</span>
+                    <span className="text-sm text-gray-700 capitalize">{status}</span>
                   </label>
                 ))}
               </div>
@@ -483,7 +568,7 @@ export function DeviceExplorer() {
                       className="rounded border-gray-300 w-3 h-3" 
                     />
                     <DeviceTypeIcon type={type} className="h-3 w-3" />
-                    <span className="text-xs text-gray-700">{type.replace('_', ' ')}</span>
+                    <span className="text-sm text-gray-700">{type.replace('_', ' ')}</span>
                   </label>
                 ))}
               </div>
@@ -492,100 +577,15 @@ export function DeviceExplorer() {
 
           {/* Right Main Area */}
           <div className="flex-1">
-            {/* Charts Section */}
-            <div className="bg-white rounded border border-gray-200 p-4 mb-3 shadow-sm">
-              <PowerChart />
-            </div>
-
-            {/* Systems Table */}
-            <div className="bg-white rounded border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-3 py-2 border-b border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900">
-                  HEMS Systems ({filteredSystems.length})
-                </h3>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                        System
-                      </th>
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                        Customer
-                      </th>
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                        Location
-                      </th>
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                        Power
-                      </th>
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                        Devices
-                      </th>
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                        Last Update
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isLoading ? (
-                      <tr>
-                        <td colSpan={6} className="text-center py-8 text-gray-500 text-xs">
-                          Loading systems...
-                        </td>
-                      </tr>
-                    ) : filteredSystems.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="text-center py-8 text-gray-500 text-xs">
-                          No systems found matching your criteria
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredSystems.map((system) => (
-                        <tr
-                          key={system.id}
-                          className="border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-                        >
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <StatusBadge status={system.status} />
-                              <span className="text-xs font-medium text-gray-900">
-                                {system.systemName}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            <span className="text-xs text-gray-700">
-                              {system.customerName}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-xs text-gray-600 max-w-xs truncate">
-                            {system.location}
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            <span className="text-xs font-medium text-blue-600">
-                              {(system.totalPower/1000).toFixed(1)}kW
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              {system.deviceCount} devices
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
-                            {system.lastUpdate}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+           <HemsSystemDataTable data={filteredSystems} />
           </div>
         </div>
+
+        <CreateHemsSystemForm
+          isOpen={isCreateFormOpen}
+          onClose={() => setIsCreateFormOpen(false)}
+          onSubmit={handleCreateSystem}
+        />
       </div>
     </div>
   );

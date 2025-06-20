@@ -9,4 +9,6 @@ export interface OtelSpan {
   };
   attributes: Record<string, unknown>;
   spanContext: SpanContext;
+  serviceName: string;
+  serviceVersion: string;
 }
