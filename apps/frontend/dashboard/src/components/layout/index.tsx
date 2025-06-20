@@ -6,7 +6,7 @@ import { SiteHeader } from '@/components/site-header';
 export function RootLayout() {
   return (
     <SidebarProvider>
-      <AppSidebar variant="inset" />
+      <AppSidebar variant="sidebar" />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">

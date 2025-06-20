@@ -7,6 +7,7 @@ import { LogExplorer } from './pages/monitoring/pages/logs/index';
 import { TraceExplorer } from './pages/monitoring/pages/traces';
 import { MetricExplorer } from './pages/monitoring/pages/metrics';
 import { DeviceExplorer } from './pages/devices';
+import { DeviceDetail } from './pages/devices/detail';
 
 export const router = createBrowserRouter([
   {
@@ -15,11 +16,15 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <DashboardPage />,
-      },
-      {
-        path: 'devices',
         element: <DeviceExplorer />,
+      },
+      // {
+      //   path: 'devices',
+      //   element: <DeviceExplorer />,
+      // },
+      {
+        path: 'devices/:id',
+        element: <DeviceDetail />,
       },
       {
         path: 'analytics',
