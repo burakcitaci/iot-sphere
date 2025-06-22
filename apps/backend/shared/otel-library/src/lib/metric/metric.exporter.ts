@@ -31,6 +31,7 @@ export class MetricExporter implements PushMetricExporter {
         }
   
        const metric = metrics;
+       console.log('metric', metric);
        await this.daprClient.pubsub.publish(
         'pubsub3',
         'my-metric',

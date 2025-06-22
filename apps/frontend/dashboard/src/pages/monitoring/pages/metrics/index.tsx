@@ -1,183 +1,124 @@
-import { useState } from 'react';
-import { Clock, Activity, Database, Server } from 'lucide-react';
-
-import { PageHeader } from '@/components/common/PageHeader';
-import { QuickActions } from '@/components/common/QuickActions';
-import { SearchInput } from '@/components/common/SearchInput';
-import { StatCard } from '@/components/common/StatCard';
-import { QueryBuilder } from '@/components/common/QueryBuilder';
-import { Query } from '@/components/common/utils';
-import { HttpMetricsChart } from '@/components/common/HttpChart';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Search, Filter, Play, Pause, RotateCcw, Download, Settings, ChevronDown } from 'lucide-react';
+import MetricCatalog from '@/components/monitoring/MetricCatalog';
 import { useMetrics } from '@/hooks/useMetrics';
-
-export type MetricType = 'counter' | 'histogram' | 'gauge';
+import { OtelMetric } from '@iot-sphere/entity-lib';
 
 export function MetricExplorer() {
-  const [timeRange, setTimeRange] = useState<string>('15m');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
-  const [queries, setQueries] = useState<Query[]>([
-    {
-      id: 1,
-      metric: 'system.cpu.user',
-      aggregation: 'avg',
-      groupBy: 'everything',
-      filters: []
-    }
-  ]);
+  // Use your real SSE business logic
+  const { metrics, isLoading, error, refreshData } = useMetrics(true);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [timeRange, setTimeRange] = useState('15m');
+  const [isLive, setIsLive] = useState(true);
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const [showFilters, setShowFilters] = useState(false);
 
-  const { metrics: telemetryMetrics, isLoading, error, refreshData } = useMetrics(autoRefresh);
-
-  // Enhanced metrics list including HTTP metrics
-  const metrics = [
-    // System metrics
-    'system.cpu.user',
-    'system.cpu.system', 
-    'system.memory.used',
-    'system.memory.free',
-    'system.disk.used',
-    'system.network.bytes_sent',
-    'system.network.bytes_rcvd',
-    
-    // Application metrics
-    'application.requests.rate',
-    'application.response.time',
-    
-    // HTTP metrics (from OpenTelemetry data)
-    'http_requests_total',
-    'http_request_duration',
-    'http_response_size',
-    
-    // Database metrics
-    'database.connections.active',
-    'database.query.duration',
-    'database.pool.size'
-  ];
-
-  const addQuery = (): void => {
-    const newQuery: Query = {
-      id: Date.now(),
-      metric: '',
-      aggregation: 'avg',
-      groupBy: 'everything',
-      filters: []
-    };
-    setQueries([...queries, newQuery]);
-  };
-
-  const updateQuery = (id: number, updates: Partial<Query>): void => {
-    setQueries(queries.map(q => q.id === id ? { ...q, ...updates } : q));
-  };
-
-  const removeQuery = (id: number): void => {
-    setQueries(queries.filter(q => q.id !== id));
-  };
-
-  const handleRefresh = (): void => {
+  const handleRefresh = useCallback(() => {
     refreshData();
-  };
-
-  const filteredMetrics: string[] = metrics.filter(metric =>
-    metric.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  }, [refreshData]);
 
   return (
-    <div className="px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <PageHeader
-          title="Metrics Explorer"
-          description="Monitor and analyze your application metrics including HTTP requests"
-          autoRefresh={autoRefresh}
-          onAutoRefreshChange={setAutoRefresh}
-          onRefresh={handleRefresh}
-        />
-
-        {/* Stats Bar */}
-        <div className="flex gap-3 mb-3">
-          <StatCard
-            title="Active Queries"
-            value={queries.length.toString()}
-            icon={Activity}
-          />
-          <StatCard
-            title="Time Range"
-            value={timeRange}
-            icon={Clock}
-          />
-          <StatCard
-            title="Metrics Available"
-            value={metrics.length.toString()}
-            icon={Database}
-          />
-          <StatCard
-            title="HTTP Metrics"
-            value={metrics.filter(m => m.startsWith('http_')).length.toString()}
-            icon={Server}
-          />
-        </div>
-
-        {/* Top Search and Controls */}
-        <div className="bg-white rounded border border-gray-200 p-3 mb-3 shadow-sm">
-          <div className="flex items-center gap-3">
-            <SearchInput
-              placeholder="Search metrics (try 'http' or 'cpu')..."
+    <div className="flex flex-col h-full bg-white">
+      {/* Compact Top Bar - Datadog Style */}
+      <div className="border-b border-gray-200 bg-white">
+        {/* Main Controls Row */}
+        <div className="flex items-center gap-1.5 px-4 py-2">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search for metrics..."
               value={searchQuery}
-              onChange={setSearchQuery}
-              className="flex-grow"
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-7 pl-8 pr-3 text-xs border border-gray-300 rounded-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-            <button className="flex items-center gap-1 bg-gray-100 border border-gray-200 text-gray-800 rounded px-3 py-1.5 text-xs hover:bg-gray-200 transition-colors">
-              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
-              </svg>
-              Filter
-            </button>
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="bg-gray-100 border border-gray-200 text-gray-800 rounded px-3 py-1.5 text-xs hover:bg-gray-200 transition-colors"
-            >
-              <option value="5m">Last 5 minutes</option>
-              <option value="15m">Last 15 minutes</option>
-              <option value="1h">Last hour</option>
-              <option value="3h">Last 3 hours</option>
-              <option value="6h">Last 6 hours</option>
-              <option value="12h">Last 12 hours</option>
-              <option value="1d">Last day</option>
-              <option value="7d">Last 7 days</option>
-            </select>
           </div>
+
+          {/* Filters Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1 h-7 px-2.5 text-xs rounded-sm border transition-colors ${
+              showFilters 
+                ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Filter className="h-3 w-3" />
+            Filters
+          </button>
+
+          {/* Time Range */}
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="h-7 px-2.5 text-xs border border-gray-200 rounded-sm bg-gray-50 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="5m">Past 5 minutes</option>
+            <option value="15m">Past 15 minutes</option>
+            <option value="1h">Past hour</option>
+            <option value="6h">Past 6 hours</option>
+            <option value="1d">Past day</option>
+          </select>
+
+          {/* Live/Pause Toggle */}
+          <button
+            onClick={() => setIsLive(!isLive)}
+            className={`flex items-center gap-1 h-7 px-2.5 text-xs rounded-sm border transition-colors ${
+              isLive 
+                ? 'bg-green-50 border-green-200 text-green-700' 
+                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            {isLive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+            {isLive ? 'Live' : 'Paused'}
+          </button>
+
+          {/* Refresh */}
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="flex items-center gap-1 h-7 px-2.5 text-xs rounded-sm border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+          >
+            <RotateCcw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+
+          {/* Export */}
+          <button className="flex items-center gap-1 h-7 px-2.5 text-xs rounded-sm border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors">
+            <Download className="h-3 w-3" />
+            Export
+          </button>
         </div>
 
-        {/* Main Content */}
-        <div className="flex gap-3">
-          {/* Left Sidebar - Query Builder */}
-          <QueryBuilder
-            queries={queries}
-            metrics={filteredMetrics}
-            onAddQuery={addQuery}
-            onUpdateQuery={updateQuery}
-            onRemoveQuery={removeQuery}
-          />
-
-          {/* Right Main Area - Chart */}
-          <div className="flex-1">
-            <div className="bg-white rounded border border-gray-200 shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900">
-                  {queries[0]?.metric ? `${queries[0].aggregation}:${queries[0].metric}(*)` : 'No metrics selected'}
-                  {queries[0]?.groupBy !== 'everything' && ` by ${queries[0].groupBy}`}
-                </h3>
-              </div>
-              <div className="p-4">
-                <HttpMetricsChart queries={queries} timeRange={timeRange} />
-              </div>
+        {/* Filters Panel (Collapsible) */}
+        {showFilters && (
+          <div className="border-t border-gray-100 px-4 py-2 bg-gray-50">
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-gray-500">Quick filters:</span>
+              <button className="h-6 px-2 bg-white border border-gray-200 rounded-sm text-gray-600 hover:bg-gray-50 text-xs">
+                type:counter
+              </button>
+              <button className="h-6 px-2 bg-white border border-gray-200 rounded-sm text-gray-600 hover:bg-gray-50 text-xs">
+                unit:ms
+              </button>
+              <button className="h-6 px-2 bg-white border border-gray-200 rounded-sm text-gray-600 hover:bg-gray-50 text-xs">
+                name:http_*
+              </button>
+              <button className="text-xs text-blue-600 hover:text-blue-700">+ Add Filter</button>
             </div>
-
-            {/* Quick Actions for HTTP Metrics */}
-            <QuickActions onSetQueries={setQueries} />
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* Main Content Area - Compact */}
+      <div className="flex-1 overflow-auto p-4">
+        <MetricCatalog
+          metrics={metrics}
+          searchQuery={searchQuery}
+          error={error}
+        />
       </div>
     </div>
   );

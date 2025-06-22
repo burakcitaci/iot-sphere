@@ -35,7 +35,7 @@ export function NavMain({ items, currentPath }: NavMainProps) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
+      <SidebarGroupContent className="space-y-1">
         <SidebarMenu>
           {items.map((item) => {
             const isActive = currentPath === item.url;
@@ -54,29 +54,30 @@ export function NavMain({ items, currentPath }: NavMainProps) {
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton
                         isActive={isActive}
-                        className="flex items-center justify-between w-full"
+                        className="flex items-center justify-between w-full h-8 px-2"
                       >
                         <div className="flex items-center gap-2">
                           {item.icon && <item.icon className="h-4 w-4" />}
-                          <span>{item.title}</span>
+                          <span className="text-sm">{item.title}</span>
                         </div>
                         <ChevronDown
-                          className={`h-4 w-4 transition-transform duration-300 ${
+                          className={`h-3.5 w-3.5 transition-transform duration-200 ${
                             isOpen ? 'rotate-180' : ''
                           }`}
                         />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="pl-6">
-                      <SidebarMenu className="mt-1">
+                      <SidebarMenu className="mt-1 space-y-0.5">
                         {item?.children?.map((child) => (
                           <SidebarMenuItem key={child.title}>
                             <SidebarMenuButton
                               asChild
                               isActive={currentPath === child.url}
+                              className="h-7 px-2"
                             >
                               <Link to={child.url}>
-                                <span>{child.title}</span>
+                                <span className="text-sm">{child.title}</span>
                               </Link>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
@@ -85,10 +86,10 @@ export function NavMain({ items, currentPath }: NavMainProps) {
                     </CollapsibleContent>
                   </Collapsible>
                 ) : (
-                  <SidebarMenuButton asChild isActive={isActive}>
+                  <SidebarMenuButton asChild isActive={isActive} className="h-8 px-2">
                     <Link to={item.url}>
                       {item.icon && <item.icon className="mr-2 h-4 w-4" />}
-                      <span>{item.title}</span>
+                      <span className="text-sm">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 )}
