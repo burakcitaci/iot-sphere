@@ -1,277 +1,211 @@
-import { useState, useCallback } from 'react';
-import { Clock, Activity, Database, Server } from 'lucide-react';
-import { PageHeader } from '@/components/common/PageHeader';
-import { SearchInput } from '@/components/common/SearchInput';
-import { StatCard } from '@/components/common/StatCard';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Search, Filter, Play, Pause, RotateCcw, Download, Settings, ChevronDown } from 'lucide-react';
+import { UnifiedDataVisualization, TraceSpan } from '@/components/monitoring/UnifiedDataVisualization';
 import { useSpans } from '@/hooks/useSpans';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { StatusBadge } from '@/components/common/StatusBadge';
-
-const formatHrTime = (hrTime: [number, number]): string => {
-  const [seconds, nanos] = hrTime;
-  const date = new Date(seconds * 1000 + nanos / 1_000_000);
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-    timeZone: 'Europe/Berlin'
-  });
-};
-
-const formatDuration = (startTime: [number, number], endTime: [number, number]): string => {
-  const [startSec, startNano] = startTime;
-  const [endSec, endNano] = endTime;
-  const durationMs = (endSec - startSec) * 1000 + (endNano - startNano) / 1_000_000;
-  return `${durationMs.toFixed(2)}ms`;
-};
+import { OtelSpan } from '@iot-sphere/entity-lib';
 
 export function TraceExplorer() {
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
-  const { spans, isLoading, error, refreshData } = useSpans(autoRefresh);
+  // Use your real SSE business logic
+  const { spans, isLoading, error, refreshData } = useSpans(true);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [timeRange, setTimeRange] = useState('15m');
+  const [isLive, setIsLive] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
+  const [showFilters, setShowFilters] = useState(false);
 
-  const handleRefresh = useCallback(() => refreshData(), [refreshData]);
+  // Transform OtelSpan data to TraceSpan format for the UI
+  const traceData = useMemo((): TraceSpan[] => {
+    return spans.map((span: OtelSpan, index: number) => {
+      // Calculate duration in milliseconds from hrTime format
+      const startMs = span.startTime[0] * 1000 + Math.floor(span.startTime[1] / 1_000_000);
+      const endMs = span.endTime[0] * 1000 + Math.floor(span.endTime[1] / 1_000_000);
+      const duration = endMs - startMs;
 
-  const stats = {
-    totalSpans: spans.length,
-    avgDuration: spans.length > 0 
-      ? spans.reduce((acc, span) => {
-          const [startSec, startNano] = span.startTime;
-          const [endSec, endNano] = span.endTime;
-          return acc + ((endSec - startSec) * 1000 + (endNano - startNano) / 1_000_000);
-        }, 0) / spans.length
-      : 0,
-    errorRate: spans.length > 0 
-      ? (spans.filter(span => span.status?.code === 2).length / spans.length * 100).toFixed(1)
-      : 0,
-    uniqueServices: new Set(spans.map(span => span.attributes['service.name'] as string)).size
-  };
+      return {
+        id: span.spanContext.spanId || `span-${index}`,
+        traceId: span.spanContext.traceId || 'unknown-trace',
+        spanId: span.spanContext.spanId || 'unknown-span',
+        parentSpanId: undefined, // OtelSpan doesn't have parentSpanId in the interface
+        operationName: span.name,
+        service: span.serviceName,
+        startTime: new Date(startMs).toISOString(),
+        duration,
+        status: span.status?.code === 1 ? 'OK' : span.status?.code === 2 ? 'ERROR' : 'TIMEOUT',
+        tags: {
+          ...span.attributes,
+          'service.version': span.serviceVersion,
+          ...(span.status?.message && { 'status.message': span.status.message })
+        }
+      };
+    });
+  }, [spans]);
 
-  const filteredSpans = spans.filter(span => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      span.name.toLowerCase().includes(searchLower) ||
-      span.attributes['code.function']?.toString().toLowerCase().includes(searchLower) ||
-      span.attributes['code.namespace']?.toString().toLowerCase().includes(searchLower) ||
-      span.spanContext.traceId.toLowerCase().includes(searchLower)
+  const handleRefresh = useCallback(() => {
+    refreshData();
+  }, [refreshData]);
+
+  const filteredTraces = useMemo(() => {
+    if (!searchQuery) return traceData;
+    return traceData.filter(trace => 
+      trace.operationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      trace.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      trace.traceId.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  });
+  }, [traceData, searchQuery]);
 
   return (
-    <div className="px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <PageHeader
-          title="Trace Explorer"
-          description="Monitor and analyze your application traces"
-          autoRefresh={autoRefresh}
-          onAutoRefreshChange={setAutoRefresh}
-          onRefresh={handleRefresh}
-        />
-
-        {/* Stats Bar */}
-        <div className="flex gap-3 mb-3">
-          <StatCard
-            title="Total Spans"
-            value={stats.totalSpans.toString()}
-            icon={Database}
-            description="Last 15 minutes"
-          />
-          <StatCard
-            title="Avg Duration"
-            value={`${stats.avgDuration.toFixed(2)}ms`}
-            icon={Clock}
-            description="Average span duration"
-          />
-          <StatCard
-            title="Error Rate"
-            value={`${stats.errorRate}%`}
-            icon={Activity}
-            description="Failed spans"
-          />
-          <StatCard
-            title="Services"
-            value={stats.uniqueServices.toString()}
-            icon={Server}
-            description="Unique services"
-          />
-        </div>
-
-        {/* Search Bar */}
-        <div className="bg-white rounded border border-gray-200 p-3 mb-3 shadow-sm">
-          <div className="flex items-center gap-3">
-            <SearchInput
-              placeholder="Search traces..."
+    <div className="flex flex-col h-full bg-white">
+      {/* Compact Top Bar - Datadog Style */}
+      <div className="border-b border-gray-200 bg-white">
+        {/* Main Controls Row */}
+        <div className="flex items-center gap-1.5 px-4 py-2">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search for traces..."
               value={searchQuery}
-              onChange={setSearchQuery}
-              className="flex-grow"
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-7 pl-8 pr-3 text-xs border border-gray-300 rounded-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-            <button className="flex items-center gap-1 bg-gray-100 border border-gray-200 text-gray-800 rounded px-3 py-1.5 text-xs hover:bg-gray-200 transition-colors">
-              <Clock className="h-3 w-3" />
-              Last 15 minutes
+          </div>
+
+          {/* Filters Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1 h-7 px-2.5 text-xs rounded-sm border transition-colors ${
+              showFilters 
+                ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Filter className="h-3 w-3" />
+            Filters
+          </button>
+
+          {/* Time Range */}
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="h-7 px-2.5 text-xs border border-gray-200 rounded-sm bg-gray-50 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="5m">Past 5 minutes</option>
+            <option value="15m">Past 15 minutes</option>
+            <option value="1h">Past hour</option>
+            <option value="6h">Past 6 hours</option>
+            <option value="1d">Past day</option>
+          </select>
+
+          {/* Live/Pause Toggle */}
+          <button
+            onClick={() => setIsLive(!isLive)}
+            className={`flex items-center gap-1 h-7 px-2.5 text-xs rounded-sm border transition-colors ${
+              isLive 
+                ? 'bg-green-50 border-green-200 text-green-700' 
+                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            {isLive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+            {isLive ? 'Live' : 'Paused'}
+          </button>
+
+          {/* Refresh */}
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="flex items-center gap-1 h-7 px-2.5 text-xs rounded-sm border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+          >
+            <RotateCcw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+
+          {/* View Mode Toggle */}
+          <div className="flex h-7 border border-gray-200 rounded-sm overflow-hidden">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-2.5 text-xs transition-colors ${
+                viewMode === 'list' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              List
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-2.5 text-xs transition-colors border-l border-gray-200 ${
+                viewMode === 'table' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Table
             </button>
           </div>
+
+          {/* Export */}
+          <button className="flex items-center gap-1 h-7 px-2.5 text-xs rounded-sm border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors">
+            <Download className="h-3 w-3" />
+            Export
+          </button>
         </div>
 
-        {/* Main Content */}
-        <div className="flex gap-4">
-          {/* Filters Sidebar */}
-          <div className="w-64 bg-white rounded border border-gray-200 shadow-sm p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Filters</h3>
-
-            {/* Services Filter */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-gray-700">Services</span>
-                {/* Up arrow placeholder */}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true" className="h-4 w-4 text-gray-400"><path stroke-linecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7"></path></svg>
-              </div>
-              {/* Search input placeholder */}
-              <div className="relative mb-2">
-                <input type="text" placeholder="Search services..." className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400" />
-              </div>
-              {/* Service list placeholder */}
-              <div className="space-y-1 text-xs text-gray-700">
-                <div>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    service-name (count)
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Duration Filter */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-gray-700">Duration</span>
-                {/* Up arrow placeholder */}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true" className="h-4 w-4 text-gray-400"><path stroke-linecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7"></path></svg>
-              </div>
-              <div className="space-y-1 text-xs text-gray-700">
-                <div>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    &lt; 100ms
-                  </label>
-                </div>
-                <div>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    100ms - 1s
-                  </label>
-                </div>
-                <div>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    &gt; 1s
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-gray-700">Status</span>
-                {/* Up arrow placeholder */}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true" className="h-4 w-4 text-gray-400"><path stroke-linecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7"></path></svg>
-              </div>
-              <div className="space-y-1 text-xs text-gray-700">
-                <div>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    Success (2xx)
-                  </label>
-                </div>
-                <div>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    Error (4xx, 5xx)
-                  </label>
-                </div>
-              </div>
+        {/* Filters Panel (Collapsible) */}
+        {showFilters && (
+          <div className="border-t border-gray-100 px-4 py-2 bg-gray-50">
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-gray-500">Quick filters:</span>
+              <button className="h-6 px-2 bg-white border border-gray-200 rounded-sm text-gray-600 hover:bg-gray-50 text-xs">
+                service:*
+              </button>
+              <button className="h-6 px-2 bg-white border border-gray-200 rounded-sm text-gray-600 hover:bg-gray-50 text-xs">
+                status:ERROR
+              </button>
+              <button className="h-6 px-2 bg-white border border-gray-200 rounded-sm text-gray-600 hover:bg-gray-50 text-xs">
+                duration:&gt;100ms
+              </button>
+              <button className="text-xs text-blue-600 hover:text-blue-700">+ Add Filter</button>
             </div>
           </div>
+        )}
+      </div>
 
-          {/* Traces Table */}
-          <div className="flex-grow bg-white rounded border border-gray-200 shadow-sm">
-            <div className="px-3 py-2 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900">
-                Traces ({filteredSpans.length})
-              </h3>
+      {/* Main Content Area - Compact */}
+      <div className="flex-1 overflow-auto p-4">
+        <UnifiedDataVisualization
+          type="traces"
+          data={filteredTraces}
+          isLoading={isLoading}
+          error={error?.message}
+          onRefresh={handleRefresh}
+          className="h-full"
+          stats={
+            <div className="flex items-center justify-between text-xs text-gray-600">
+              <div className="flex items-center gap-3">
+                <span>{filteredTraces.length.toLocaleString()} traces found</span>
+                <span className="text-gray-400">•</span>
+                <span>Showing {Math.min(100, filteredTraces.length)} of {filteredTraces.length}</span>
+                {/* {error && (
+                  <>
+                    <span className="text-gray-400">•</span>
+                    <span className="text-red-600">{error.message}</span>
+                  </>
+                )} */}
+              </div>
+              <div className="flex items-center gap-2">
+                <span>Group by:</span>
+                <select className="h-5 text-xs border-none bg-transparent text-gray-600 focus:outline-none">
+                  <option>None</option>
+                  <option>Service</option>
+                  <option>Operation</option>
+                  <option>Status</option>
+                </select>
+              </div>
             </div>
-
-            {isLoading ? (
-              <div className="p-4 text-center text-gray-500">
-                Loading traces...
-              </div>
-            ) : error ? (
-              <div className="p-4 text-center text-red-500">
-                Error loading traces: {error.message}
-              </div>
-            ) : filteredSpans.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                No traces found
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                      Timestamp
-                    </TableHead>
-                    <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                      Service
-                    </TableHead>
-                    <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                      Resource
-                    </TableHead>
-                    <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
-                      Duration
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSpans.map((span) => (
-                    <TableRow
-                      key={span.spanContext.spanId}
-                      className="border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <TableCell className="px-3 py-2 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <StatusBadge status={span.status.code === 1 ? 'Completed' : 'Error'} />
-                          <span className="text-sm text-gray-500">
-                            {formatHrTime(span.startTime)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-3 py-2 whitespace-nowrap text-xs">
-                        <span className="text-sm text-gray-800">
-                          {span.serviceName}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-3 py-2 text-xs text-gray-900">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{span.attributes['code.function'] as string}</span>
-                          <span className="text-gray-500">{span.attributes['code.namespace'] as string}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-3 py-2 whitespace-nowrap text-xs">
-                        <span className={span.status.code === 2 ? 'text-red-600' : 'text-gray-900'}>
-                          {formatDuration(span.startTime, span.endTime)}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </div>
+          }
+        />
       </div>
     </div>
   );

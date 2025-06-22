@@ -24,7 +24,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   // Get configuration values
-  const port = configService.get('port') || 3001;
+  const port = configService.get('port') || 3009;
   const globalPrefix = configService.get('api.prefix') || 'api';
 
   // Global pipes

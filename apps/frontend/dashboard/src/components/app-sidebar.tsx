@@ -95,22 +95,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader className="p-1.5 gap-1">
+      <SidebarHeader className="py-2 px-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1 text-xs"
+              className="h-8 px-2"
             >
               <Link to="/">
                 <BoxesIcon className="h-4 w-4" />
-                <span className="text-sm font-semibold">IOT Sphere</span>
+                <span className="text-sm font-medium">IOT Sphere</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className="gap-1 p-1">
+      <SidebarContent className="py-2 px-3">
         <NavMain items={data.navMain} currentPath={location.pathname} />
         <NavSecondary
           items={data.navSecondary}
@@ -118,7 +118,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           className="mt-auto"
         />
       </SidebarContent>
-      <SidebarFooter className="p-1.5 gap-1">
+      <SidebarFooter className="py-2 px-3">
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>

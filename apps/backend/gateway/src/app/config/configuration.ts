@@ -1,5 +1,6 @@
 export default () => ({
-  port: parseInt(process.env.APP_PORT ?? process.env.PORT ?? '3000', 10),
+  //port: parseInt(process.env.APP_PORT ?? process.env.PORT ?? '3000', 10),
+  port: 3009,
   api: {
     prefix: process.env.API_PREFIX || 'api',
   },
