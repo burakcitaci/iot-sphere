@@ -38,9 +38,9 @@ data:
             action: upsert
     
     exporters:
-      # Console exporter for debugging
-      console:
-        loglevel: debug
+      # Debug exporter for debugging
+      debug:
+        verbosity: detailed
       
       # OTLP exporter for sending to backend services
       otlp:
@@ -57,13 +57,13 @@ data:
         traces:
           receivers: [otlp, jaeger, zipkin]
           processors: [batch, memory_limiter, resource]
-          exporters: [console, otlp, logging]
+          exporters: [debug, otlp, logging]
         metrics:
           receivers: [otlp]
           processors: [batch, memory_limiter, resource]
-          exporters: [console, otlp, logging]
+          exporters: [debug, otlp, logging]
         logs:
           receivers: [otlp]
           processors: [batch, memory_limiter, resource]
-          exporters: [console, otlp, logging]
+          exporters: [debug, otlp, logging]
 {{- end }} 
