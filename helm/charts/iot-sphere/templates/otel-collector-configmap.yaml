@@ -9,7 +9,7 @@ metadata:
 data:
   collector.yaml: |
     extensions:
-      healthcheck:
+      health_check:
         endpoint: 0.0.0.0:13133
     
     receivers:
@@ -57,7 +57,7 @@ data:
         loglevel: debug
     
     service:
-      extensions: [healthcheck]
+      extensions: [health_check]
       pipelines:
         traces:
           receivers: [otlp, jaeger, zipkin]
