@@ -8,6 +8,10 @@ metadata:
     app.kubernetes.io/component: otel-collector
 data:
   collector.yaml: |
+    extensions:
+      healthcheck:
+        endpoint: 0.0.0.0:13133
+    
     receivers:
       otlp:
         protocols:
@@ -53,6 +57,7 @@ data:
         loglevel: debug
     
     service:
+      extensions: [healthcheck]
       pipelines:
         traces:
           receivers: [otlp, jaeger, zipkin]

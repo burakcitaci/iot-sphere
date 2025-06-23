@@ -44,6 +44,9 @@ spec:
             - name: zipkin
               containerPort: 9411
               protocol: TCP
+            - name: healthcheck
+              containerPort: 13133
+              protocol: TCP
           volumeMounts:
             - name: config
               mountPath: /conf
