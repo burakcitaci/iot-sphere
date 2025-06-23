@@ -44,6 +44,17 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          {{- if .Values.otelcol.enabled }}
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://{{ include "iot-sphere.fullname" . }}-otel-collector:4318"
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: "http/protobuf"
+            - name: OTEL_SERVICE_NAME
+              value: "{{ include "iot-sphere.fullname" . }}"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name={{ include "iot-sphere.fullname" . }},service.version={{ .Chart.AppVersion }}"
+          {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}

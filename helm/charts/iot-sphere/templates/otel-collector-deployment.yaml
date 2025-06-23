@@ -1,0 +1,74 @@
+{{- if .Values.otelcol.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "iot-sphere.fullname" . }}-otel-collector
+  labels:
+    {{- include "iot-sphere.labels" . | nindent 4 }}
+    app.kubernetes.io/component: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "iot-sphere.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: otel-collector
+  template:
+    metadata:
+      labels:
+        {{- include "iot-sphere.labels" . | nindent 8 }}
+        app.kubernetes.io/component: otel-collector
+    spec:
+      {{- with .Values.otelcol.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: otel-collector
+          image: "{{ .Values.otelcol.image.repository }}:{{ .Values.otelcol.image.tag }}"
+          imagePullPolicy: {{ .Values.otelcol.image.pullPolicy }}
+          args:
+            - "--config=/conf/collector.yaml"
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+              protocol: TCP
+            - name: otlp-http
+              containerPort: 4318
+              protocol: TCP
+            - name: jaeger-grpc
+              containerPort: 14250
+              protocol: TCP
+            - name: jaeger-http
+              containerPort: 14268
+              protocol: TCP
+            - name: zipkin
+              containerPort: 9411
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+          {{- with .Values.otelcol.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.otelcol.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "iot-sphere.fullname" . }}-otel-collector-config
+{{- end }} 

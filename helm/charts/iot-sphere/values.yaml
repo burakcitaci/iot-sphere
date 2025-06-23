@@ -121,3 +121,111 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# OpenTelemetry Collector configuration
+otelcol:
+  enabled: true
+  image:
+    repository: otel/opentelemetry-collector
+    tag: "0.96.0"
+    pullPolicy: IfNotPresent
+  
+  # Collector configuration
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      jaeger:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:14250
+          thrift_http:
+            endpoint: 0.0.0.0:14268
+      zipkin:
+        endpoint: 0.0.0.0:9411
+    
+    processors:
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 1500
+      resource:
+        attributes:
+          - key: environment
+            value: "production"
+            action: upsert
+    
+    exporters:
+      # Console exporter for debugging
+      console:
+        loglevel: debug
+      
+      # OTLP exporter for sending to backend services
+      otlp:
+        endpoint: "http://localhost:4317"
+        tls:
+          insecure: true
+      
+      # Logging exporter
+      logging:
+        loglevel: debug
+    
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp, jaeger, zipkin]
+          processors: [batch, memory_limiter, resource]
+          exporters: [console, otlp, logging]
+        metrics:
+          receivers: [otlp]
+          processors: [batch, memory_limiter, resource]
+          exporters: [console, otlp, logging]
+        logs:
+          receivers: [otlp]
+          processors: [batch, memory_limiter, resource]
+          exporters: [console, otlp, logging]
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      - name: otlp-grpc
+        port: 4317
+        targetPort: 4317
+      - name: otlp-http
+        port: 4318
+        targetPort: 4318
+      - name: jaeger-grpc
+        port: 14250
+        targetPort: 14250
+      - name: jaeger-http
+        port: 14268
+        targetPort: 14268
+      - name: zipkin
+        port: 9411
+        targetPort: 9411
+  
+  # Resources for the collector
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 400Mi
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  
+  # Pod security context
+  podSecurityContext:
+    fsGroup: 1000

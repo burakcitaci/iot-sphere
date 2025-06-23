@@ -55,6 +55,50 @@ spec:
             port: 3000
           initialDelaySeconds: 5
           periodSeconds: 5
+        # OpenTelemetry Collector configuration
+        otelcol:
+          enabled: true
+          image:
+            repository: otel/opentelemetry-collector
+            tag: "0.96.0"
+            pullPolicy: IfNotPresent
+          config:
+            processors:
+              resource:
+                attributes:
+                  - key: environment
+                    value: "production"
+                    action: upsert
+            exporters:
+              otlp:
+                endpoint: "http://localhost:4317"
+                tls:
+                  insecure: true
+          service:
+            type: ClusterIP
+            ports:
+              - name: otlp-grpc
+                port: 4317
+                targetPort: 4317
+              - name: otlp-http
+                port: 4318
+                targetPort: 4318
+              - name: jaeger-grpc
+                port: 14250
+                targetPort: 14250
+              - name: jaeger-http
+                port: 14268
+                targetPort: 14268
+              - name: zipkin
+                port: 9411
+                targetPort: 9411
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              memory: 400Mi
   destination:
     server: https://kubernetes.default.svc
     namespace: dashboard
@@ -71,4 +115,4 @@ spec:
       backoff:
         duration: 5s
         factor: 2
-        maxDuration: 3m 
+        maxDuration: 3m

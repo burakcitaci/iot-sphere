@@ -1,0 +1,69 @@
+{{- if .Values.otelcol.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "iot-sphere.fullname" . }}-otel-collector-config
+  labels:
+    {{- include "iot-sphere.labels" . | nindent 4 }}
+    app.kubernetes.io/component: otel-collector
+data:
+  collector.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      jaeger:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:14250
+          thrift_http:
+            endpoint: 0.0.0.0:14268
+      zipkin:
+        endpoint: 0.0.0.0:9411
+    
+    processors:
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 1500
+      resource:
+        attributes:
+          - key: environment
+            value: "{{ .Values.otelcol.config.processors.resource.attributes.0.value }}"
+            action: upsert
+    
+    exporters:
+      # Console exporter for debugging
+      console:
+        loglevel: debug
+      
+      # OTLP exporter for sending to backend services
+      otlp:
+        endpoint: "{{ .Values.otelcol.config.exporters.otlp.endpoint }}"
+        tls:
+          insecure: {{ .Values.otelcol.config.exporters.otlp.tls.insecure }}
+      
+      # Logging exporter
+      logging:
+        loglevel: debug
+    
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp, jaeger, zipkin]
+          processors: [batch, memory_limiter, resource]
+          exporters: [console, otlp, logging]
+        metrics:
+          receivers: [otlp]
+          processors: [batch, memory_limiter, resource]
+          exporters: [console, otlp, logging]
+        logs:
+          receivers: [otlp]
+          processors: [batch, memory_limiter, resource]
+          exporters: [console, otlp, logging]
+{{- end }} 

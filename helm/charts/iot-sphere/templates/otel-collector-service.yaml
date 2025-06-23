@@ -1,0 +1,21 @@
+{{- if .Values.otelcol.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "iot-sphere.fullname" . }}-otel-collector
+  labels:
+    {{- include "iot-sphere.labels" . | nindent 4 }}
+    app.kubernetes.io/component: otel-collector
+spec:
+  type: {{ .Values.otelcol.service.type }}
+  ports:
+    {{- range .Values.otelcol.service.ports }}
+    - name: {{ .name }}
+      port: {{ .port }}
+      targetPort: {{ .targetPort }}
+      protocol: TCP
+    {{- end }}
+  selector:
+    {{- include "iot-sphere.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: otel-collector
+{{- end }} 
