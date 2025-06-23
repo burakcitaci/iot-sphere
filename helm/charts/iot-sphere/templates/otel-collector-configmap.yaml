@@ -34,7 +34,7 @@ data:
       resource:
         attributes:
           - key: environment
-            value: "{{ .Values.otelcol.config.processors.resource.attributes.0.value }}"
+            value: "production"
             action: upsert
     
     exporters:
@@ -44,9 +44,9 @@ data:
       
       # OTLP exporter for sending to backend services
       otlp:
-        endpoint: "{{ .Values.otelcol.config.exporters.otlp.endpoint }}"
+        endpoint: "http://localhost:4317"
         tls:
-          insecure: {{ .Values.otelcol.config.exporters.otlp.tls.insecure }}
+          insecure: true
       
       # Logging exporter
       logging:
