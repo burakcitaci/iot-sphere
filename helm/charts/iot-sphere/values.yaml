@@ -210,6 +210,9 @@ otelcol:
       - name: zipkin
         port: 9411
         targetPort: 9411
+      - name: metrics
+        port: 8888
+        targetPort: 8888
   
   # Resources for the collector
   resources:
