@@ -1,0 +1,19 @@
+{{- if .Values.devices.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "iot-sphere.fullname" . }}-devices
+  labels:
+    {{- include "iot-sphere.labels" . | nindent 4 }}
+    app.kubernetes.io/component: devices-backend
+spec:
+  type: {{ .Values.devices.service.type }}
+  ports:
+    - port: {{ .Values.devices.service.port }}
+      targetPort: {{ .Values.devices.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "iot-sphere.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: devices-backend
+{{- end }} 

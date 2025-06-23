@@ -1,0 +1,82 @@
+{{- if .Values.devices.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "iot-sphere.fullname" . }}-devices
+  labels:
+    {{- include "iot-sphere.labels" . | nindent 4 }}
+    app.kubernetes.io/component: devices-backend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "iot-sphere.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: devices-backend
+  template:
+    metadata:
+      labels:
+        {{- include "iot-sphere.labels" . | nindent 8 }}
+        app.kubernetes.io/component: devices-backend
+      {{- with .Values.devices.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.devices.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "iot-sphere.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}-devices
+          image: "{{ .Values.devices.image.repository }}:{{ .Values.devices.image.tag }}"
+          imagePullPolicy: {{ .Values.devices.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.devices.config.port }}
+              protocol: TCP
+          {{- with .Values.devices.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.devices.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.devices.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.devices.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.devices.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.devices.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.devices.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.devices.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.devices.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.devices.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }} 

@@ -235,3 +235,70 @@ otelcol:
   # Pod security context
   podSecurityContext:
     fsGroup: 1000
+
+# Devices Backend configuration
+devices:
+  enabled: true
+  image:
+    repository: iot-sphere-devices
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # Application configuration
+  config:
+    port: 3004
+    corsOrigin: "http://localhost:3000"
+    nodeEnv: "production"
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 3004
+    targetPort: 3004
+  
+  # Resources for the devices backend
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  
+  # Pod security context
+  podSecurityContext:
+    fsGroup: 1000
+  
+  # Health checks
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 3004
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 3004
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  
+  # Environment variables
+  env:
+    - name: NODE_ENV
+      value: "production"
+    - name: PORT
+      value: "3004"
+    - name: CORS_ORIGIN
+      value: "http://localhost:3000"
