@@ -4,6 +4,10 @@
   "sourceRoot": "apps/frontend/dashboard/src",
   "projectType": "application",
   "tags": [],
-  "// targets": "to see all targets run: nx show project dashboard --web",
-  "targets": {}
+  "targets": {
+    "docker-build": {
+      "dependsOn": ["build"],
+      "command": "docker build -f apps/frontend/dashboard/Dockerfile . -t dashboard"
+    }
+  }
 }
